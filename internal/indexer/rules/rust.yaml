@@ -1,0 +1,50 @@
+# ast-grep YAML rules for Rust symbol extraction.
+
+# Function definitions
+- id: rs-function-def
+  language: Rust
+  rule:
+    kind: function_item
+  message: function definition
+
+# Struct definitions
+- id: rs-struct-def
+  language: Rust
+  rule:
+    kind: struct_item
+  message: struct definition
+
+# Enum definitions
+- id: rs-enum-def
+  language: Rust
+  rule:
+    kind: enum_item
+  message: enum definition
+
+# Trait definitions
+- id: rs-trait-def
+  language: Rust
+  rule:
+    kind: trait_item
+  message: trait definition
+
+# Impl blocks
+- id: rs-impl-block
+  language: Rust
+  rule:
+    kind: impl_item
+  message: impl block
+
+# Use statements
+- id: rs-use
+  language: Rust
+  rule:
+    kind: use_declaration
+  message: use declaration
+
+# Function calls
+- id: rs-call-expr
+  language: Rust
+  rule:
+    kind: call_expression
+  message: function call

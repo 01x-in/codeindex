@@ -1,0 +1,60 @@
+# ast-grep YAML rules for TypeScript symbol extraction.
+# These rules are embedded in the Go binary via embed.FS.
+
+# Function definitions
+- id: ts-function-def
+  language: TypeScript
+  rule:
+    kind: function_declaration
+  message: function definition
+
+# Arrow function variables
+- id: ts-arrow-fn-def
+  language: TypeScript
+  rule:
+    kind: lexical_declaration
+    has:
+      kind: arrow_function
+  message: arrow function definition
+
+# Class definitions
+- id: ts-class-def
+  language: TypeScript
+  rule:
+    kind: class_declaration
+  message: class definition
+
+# Interface definitions
+- id: ts-interface-def
+  language: TypeScript
+  rule:
+    kind: interface_declaration
+  message: interface definition
+
+# Type alias definitions
+- id: ts-type-def
+  language: TypeScript
+  rule:
+    kind: type_alias_declaration
+  message: type alias definition
+
+# Export declarations
+- id: ts-export
+  language: TypeScript
+  rule:
+    kind: export_statement
+  message: export declaration
+
+# Import declarations
+- id: ts-import
+  language: TypeScript
+  rule:
+    kind: import_statement
+  message: import declaration
+
+# Function calls
+- id: ts-call-expr
+  language: TypeScript
+  rule:
+    kind: call_expression
+  message: function call
