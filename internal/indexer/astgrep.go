@@ -8,34 +8,38 @@ import (
 
 // AstGrepRunner defines the interface for running ast-grep commands.
 type AstGrepRunner interface {
-	Scan(rulePath string, targetPath string) ([]AstGrepMatch, error)
+	// ScanWithInlineRules runs ast-grep with inline rules on a target path.
+	ScanWithInlineRules(rules string, targetPath string) ([]AstGrepMatch, error)
 }
 
 // AstGrepMatch represents a single match from ast-grep JSON output.
 type AstGrepMatch struct {
-	Text     string            `json:"text"`
-	Range    AstGrepRange      `json:"range"`
-	File     string            `json:"file"`
-	RuleID   string            `json:"ruleId"`
-	MetaVars map[string]MetaVar `json:"metaVariables"`
+	Text     string       `json:"text"`
+	Range    AstGrepRange `json:"range"`
+	File     string       `json:"file"`
+	Lines    string       `json:"lines"`
+	RuleID   string       `json:"ruleId"`
+	Language string       `json:"language"`
+	Severity string       `json:"severity"`
 }
 
 // AstGrepRange represents the source range of a match.
 type AstGrepRange struct {
-	Start Position `json:"start"`
-	End   Position `json:"end"`
+	ByteOffset ByteRange `json:"byteOffset"`
+	Start      Position  `json:"start"`
+	End        Position  `json:"end"`
+}
+
+// ByteRange is a byte offset range.
+type ByteRange struct {
+	Start int `json:"start"`
+	End   int `json:"end"`
 }
 
 // Position is a line/column position in a file.
 type Position struct {
 	Line   int `json:"line"`
 	Column int `json:"column"`
-}
-
-// MetaVar represents a captured meta-variable from an ast-grep rule.
-type MetaVar struct {
-	Text  string       `json:"text"`
-	Range AstGrepRange `json:"range"`
 }
 
 // SubprocessRunner runs ast-grep as a subprocess.
@@ -46,15 +50,29 @@ func NewSubprocessRunner() *SubprocessRunner {
 	return &SubprocessRunner{}
 }
 
-// Scan invokes ast-grep scan with the given rule and target path.
-func (r *SubprocessRunner) Scan(rulePath string, targetPath string) ([]AstGrepMatch, error) {
-	cmd := exec.Command("ast-grep", "scan", "--rule", rulePath, "--json", targetPath)
+// ScanWithInlineRules invokes ast-grep scan with inline rules on the given path.
+func (r *SubprocessRunner) ScanWithInlineRules(rules string, targetPath string) ([]AstGrepMatch, error) {
+	cmd := exec.Command("ast-grep", "scan", "--inline-rules", rules, "--json", targetPath)
 	output, err := cmd.Output()
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
-			return nil, fmt.Errorf("ast-grep scan failed (exit %d): %s", exitErr.ExitCode(), string(exitErr.Stderr))
+			// ast-grep returns exit code 1 when it finds matches (like grep).
+			// Only treat non-0/1 as actual errors.
+			if exitErr.ExitCode() > 1 {
+				return nil, fmt.Errorf("ast-grep scan failed (exit %d): %s", exitErr.ExitCode(), string(exitErr.Stderr))
+			}
+			// Exit code 1 with output is fine — it means matches were found.
+			output = exitErr.Stderr
+			if len(cmd.ProcessState.String()) > 0 {
+				// Try to use stdout from the command
+			}
+		} else {
+			return nil, fmt.Errorf("running ast-grep: %w", err)
 		}
-		return nil, fmt.Errorf("running ast-grep: %w", err)
+	}
+
+	if len(output) == 0 {
+		return nil, nil
 	}
 
 	var matches []AstGrepMatch
@@ -76,3 +94,16 @@ func CheckInstalled() error {
 
 // Ensure SubprocessRunner satisfies AstGrepRunner at compile time.
 var _ AstGrepRunner = (*SubprocessRunner)(nil)
+
+// MockRunner is a test implementation of AstGrepRunner.
+type MockRunner struct {
+	Matches []AstGrepMatch
+	Err     error
+}
+
+// ScanWithInlineRules returns canned matches for testing.
+func (m *MockRunner) ScanWithInlineRules(rules string, targetPath string) ([]AstGrepMatch, error) {
+	return m.Matches, m.Err
+}
+
+var _ AstGrepRunner = (*MockRunner)(nil)
