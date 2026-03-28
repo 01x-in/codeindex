@@ -1,7 +1,5 @@
 package mcp
 
-// HandleToolCall dispatches an MCP tool call to the appropriate handler.
-func (s *Server) HandleToolCall(params ToolCallParams) (ToolResult, error) {
-	// TODO: M1-S8 implementation
-	return ToolResult{}, nil
-}
+// This file is intentionally kept minimal.
+// All tool handlers are implemented in server.go as methods on *Server.
+// The HandleToolCall method in server.go dispatches to the appropriate handler.

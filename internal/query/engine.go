@@ -2,24 +2,26 @@ package query
 
 import (
 	"github.com/01x/codeindex/internal/graph"
+	"github.com/01x/codeindex/internal/indexer"
 )
 
 // Engine provides high-level query operations over the knowledge graph.
 type Engine struct {
-	store graph.Store
+	store    graph.Store
+	repoRoot string
 }
 
 // NewEngine creates a new query engine.
-func NewEngine(store graph.Store) *Engine {
-	return &Engine{store: store}
+func NewEngine(store graph.Store, repoRoot string) *Engine {
+	return &Engine{store: store, repoRoot: repoRoot}
 }
 
 // FileStructure represents the structural skeleton of a file.
 type FileStructure struct {
-	File    string         `json:"file"`
-	Stale   bool           `json:"stale"`
-	Symbols []SymbolInfo   `json:"symbols"`
-	Imports []ImportInfo   `json:"imports"`
+	File    string       `json:"file"`
+	Stale   bool         `json:"stale"`
+	Symbols []SymbolInfo `json:"symbols"`
+	Imports []ImportInfo `json:"imports"`
 }
 
 // SymbolInfo is a summary of a symbol for file structure responses.
@@ -75,4 +77,13 @@ type QueryMetadata struct {
 	StaleFiles      []string `json:"stale_files"`
 	QueryDurationMs int64    `json:"query_duration_ms"`
 	IndexAgeSeconds int64    `json:"index_age_seconds,omitempty"`
+}
+
+// isFileStale checks if a file is stale using the indexer's staleness detection.
+func (e *Engine) isFileStale(filePath string) bool {
+	stale, err := indexer.IsStaleFile(e.store, e.repoRoot, filePath)
+	if err != nil {
+		return true // err on the side of caution
+	}
+	return stale
 }
