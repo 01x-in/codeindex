@@ -35,19 +35,21 @@ These are set during planning. Build agents must respect them.
 Read agent_docs/system-design.md for the full list before writing any code.
 
 ## Coding Standards
-- TypeScript strict mode — no `any` types
-- Named exports only — no default exports except framework-required pages
-- All functions must have type signatures
-- No raw SQL — use the ORM defined in system-design.md
-- Error responses must follow RFC 7807 Problem Details format
+- Go strict — no `any` types, all functions have explicit type signatures
+- Named exports only — capitalize public symbols per Go convention
+- No raw SQL in application code — use graph.Store interface methods
+- Error responses must follow RFC 7807 Problem Details format (in MCP responses)
 - Every feature must have tests before implementation (TDD)
+- Use `modernc.org/sqlite` (pure Go) — no CGo
 
 ## Test Commands
-(Architect agent will populate these after scaffold)
-- Run tests:   `[to be filled by architect agent]`
-- Type check:  `[to be filled by architect agent]`
-- Lint:        `[to be filled by architect agent]`
-- Dev server:  `[to be filled by architect agent]`
+- Run tests:   `go test ./...`
+- Run tests verbose: `go test -v ./...`
+- Race detector: `go test -race ./...`
+- Type check:  `go vet ./...`
+- Lint:        `golangci-lint run ./...`
+- Build:       `go build -o bin/code-index ./cmd/code-index`
+- Build+run:   `make dev`
 
 ## UI/UX Review Gate (runs after all stories in a milestone pass build-review)
 Requires PinchTab running at localhost:9867 and the dev server running.
