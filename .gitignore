@@ -1,9 +1,36 @@
+# Build artifacts
+bin/
+dist/
+build/
+
+# Code Index data
+.code-index/
+
+# Go
+vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
 .env
 .env.local
 .env.*.local
+
+# Logs
+*.log
+
+# Node (for npx wrapper)
 node_modules/
 .next/
-dist/
-build/
-*.log
-.DS_Store
+
+# Test
+coverage.out
+coverage.html
