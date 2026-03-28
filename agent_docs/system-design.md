@@ -10,7 +10,7 @@ Code Index is a Go CLI tool that builds a persistent knowledge graph of codebase
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                     code-index CLI                       │
+│                     codeindex CLI                       │
 │  (single Go binary — cobra commands)                     │
 ├──────────┬──────────┬───────────┬───────────┬───────────┤
 │  init    │  reindex │  status   │  tree     │  serve    │
@@ -31,7 +31,7 @@ Code Index is a Go CLI tool that builds a persistent knowledge graph of codebase
      │          │           │                        │
      ▼          ▼           ▼                        ▼
 ┌──────────┐ ┌──────────┐ ┌──────────────────┐ ┌─────────┐
-│ .code-   │ │ ast-grep │ │ .code-index/     │ │ MCP     │
+│ .code-   │ │ ast-grep │ │ .codeindex/     │ │ MCP     │
 │ index.   │ │ (extern  │ │ graph.db         │ │ JSON-   │
 │ yaml     │ │ process) │ │ (SQLite)         │ │ RPC     │
 └──────────┘ └──────────┘ └──────────────────┘ └─────────┘
@@ -43,16 +43,16 @@ Code Index is a Go CLI tool that builds a persistent knowledge graph of codebase
 
 ```
 cmd/
-  code-index/
+  codeindex/
     main.go                 # Entry point
 internal/
   cli/
     root.go                 # Cobra root command
-    init.go                 # code-index init
-    reindex.go              # code-index reindex [file] [--watch]
-    status.go               # code-index status
-    tree.go                 # code-index tree <symbol> [--file] [--json]
-    serve.go                # code-index serve (MCP server)
+    init.go                 # codeindex init
+    reindex.go              # codeindex reindex [file] [--watch]
+    status.go               # codeindex status
+    tree.go                 # codeindex tree <symbol> [--file] [--json]
+    serve.go                # codeindex serve (MCP server)
   config/
     config.go               # Config loading, cascade resolution
     detect.go               # Language auto-detection from project markers
@@ -260,7 +260,7 @@ ast-grep outputs JSON per match. The parser transforms each match into Node/Edge
 ### Transport
 
 - stdio (stdin/stdout JSON-RPC 2.0)
-- Started via `code-index serve`
+- Started via `codeindex serve`
 - One instance per agent session
 
 ### Tools Exposed
@@ -293,7 +293,7 @@ All MCP responses follow this envelope:
 
 ## Config System
 
-### `.code-index.yaml` Schema
+### `.codeindex.yaml` Schema
 
 ```yaml
 version: 1
@@ -313,18 +313,18 @@ query_primitives:
   - get_callers
   - get_subgraph
   - reindex
-index_path: .code-index    # relative to repo root
+index_path: .codeindex    # relative to repo root
 ```
 
 ### Resolution Cascade
 
-1. Explicit `.code-index.yaml` in repo root (wins)
+1. Explicit `.codeindex.yaml` in repo root (wins)
 2. Auto-detection from project markers:
    - `package.json` / `tsconfig.json` -> typescript
    - `go.mod` -> go
    - `pyproject.toml` / `setup.py` -> python
    - `Cargo.toml` -> rust
-3. `code-index init` generates the file interactively
+3. `codeindex init` generates the file interactively
 
 ---
 
@@ -332,15 +332,15 @@ index_path: .code-index    # relative to repo root
 
 | Command | Description | Milestone |
 |---------|-------------|-----------|
-| `code-index init` | Auto-detect languages, generate `.code-index.yaml`, run initial index | M1 |
-| `code-index reindex` | Re-index all stale files | M1 |
-| `code-index reindex <path>` | Re-index single file | M1 |
-| `code-index reindex --watch` | Watch mode, auto-reindex on save | M5 |
-| `code-index status` | Show index health summary | M1 |
-| `code-index serve` | Start MCP stdio server | M1 |
-| `code-index tree <symbol>` | Interactive TUI tree view | M2 |
-| `code-index tree --file <path>` | File structure tree view | M2 |
-| `code-index tree <symbol> --json` | JSON tree output | M2 |
+| `codeindex init` | Auto-detect languages, generate `.codeindex.yaml`, run initial index | M1 |
+| `codeindex reindex` | Re-index all stale files | M1 |
+| `codeindex reindex <path>` | Re-index single file | M1 |
+| `codeindex reindex --watch` | Watch mode, auto-reindex on save | M5 |
+| `codeindex status` | Show index health summary | M1 |
+| `codeindex serve` | Start MCP stdio server | M1 |
+| `codeindex tree <symbol>` | Interactive TUI tree view | M2 |
+| `codeindex tree --file <path>` | File structure tree view | M2 |
+| `codeindex tree <symbol> --json` | JSON tree output | M2 |
 
 ---
 
@@ -353,14 +353,14 @@ All errors follow RFC 7807 Problem Details format in MCP responses:
   "type": "https://codeindex.dev/errors/file-not-indexed",
   "title": "File Not Indexed",
   "status": 404,
-  "detail": "The file 'src/utils.ts' has not been indexed. Run 'code-index reindex src/utils.ts' first."
+  "detail": "The file 'src/utils.ts' has not been indexed. Run 'codeindex reindex src/utils.ts' first."
 }
 ```
 
 CLI errors are printed to stderr with actionable messages:
 - "ast-grep not found in PATH. Install: https://ast-grep.github.io/guide/quick-start.html"
 - "tsconfig.json found but ast-grep TypeScript parsing failed: [reason]"
-- ".code-index.yaml not found. Run 'code-index init' to create one."
+- ".codeindex.yaml not found. Run 'codeindex init' to create one."
 
 ---
 
@@ -380,9 +380,9 @@ CLI errors are printed to stderr with actionable messages:
 
 ## Security & Privacy
 
-- All data stays local (`.code-index/` directory)
+- All data stays local (`.codeindex/` directory)
 - No network calls, no telemetry, no cloud sync
-- `.code-index/` should be added to `.gitignore` (init command does this)
+- `.codeindex/` should be added to `.gitignore` (init command does this)
 - No credentials or secrets are ever indexed (code structure only, not values)
 
 ---

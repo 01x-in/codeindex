@@ -23,7 +23,7 @@
 - Spinner in TTY mode during indexing (charmbracelet/spinner).
 - Exit codes: 0 = success, 1 = general error, 2 = config error, 3 = ast-grep not found.
 
-### `code-index init` Output
+### `codeindex init` Output
 
 ```
 Detected languages:
@@ -35,16 +35,16 @@ Proposed config:
   languages: [typescript, go]
   ignore: [node_modules, vendor, .git, dist, build]
 
-Write .code-index.yaml? [Y/n]
+Write .codeindex.yaml? [Y/n]
 ```
 
 With `--yes`:
 ```
-Wrote .code-index.yaml (typescript, go)
-Added .code-index/ to .gitignore
+Wrote .codeindex.yaml (typescript, go)
+Added .codeindex/ to .gitignore
 ```
 
-### `code-index status` Output
+### `codeindex status` Output
 
 ```
 Code Index Status
@@ -63,7 +63,7 @@ Stale files:
   src/routes/index.ts (modified 2m ago)
 ```
 
-### `code-index reindex` Output (TTY)
+### `codeindex reindex` Output (TTY)
 
 ```
 ⠋ Reindexing... 4 stale files
@@ -75,7 +75,7 @@ Reindexed 4 files in 340ms
   src/routes/index.ts   (+2 nodes, +4 edges)
 ```
 
-### `code-index reindex <file>` Output
+### `codeindex reindex <file>` Output
 
 ```
 Reindexed src/utils.ts in 42ms (+3 nodes, +5 edges)
@@ -86,16 +86,16 @@ Reindexed src/utils.ts in 42ms (+3 nodes, +5 edges)
 ```
 Error: ast-grep not found in PATH
   Install ast-grep: https://ast-grep.github.io/guide/quick-start.html
-  Then run: code-index reindex
+  Then run: codeindex reindex
 ```
 
 ```
-Error: .code-index.yaml not found
-  Run 'code-index init' to auto-detect languages and create config.
+Error: .codeindex.yaml not found
+  Run 'codeindex init' to auto-detect languages and create config.
 ```
 
 ```
-Error: invalid .code-index.yaml
+Error: invalid .codeindex.yaml
   Line 3: unknown language 'typescript2' — supported: typescript, go, python, rust
 ```
 
@@ -305,7 +305,7 @@ All CLI commands support `--json` for machine consumption. JSON output:
 - Includes all data shown in human-readable mode
 - Includes `metadata` with timing and staleness info
 
-Example: `code-index status --json`
+Example: `codeindex status --json`
 ```json
 {
   "files_indexed": 142,
@@ -333,7 +333,7 @@ This section is intentionally left minimal for M1 (CLI-only milestone). TUI asse
 
 ```
 route: tree-symbol
-  launch: code-index tree handleRequest (on testdata/ts-project)
+  launch: codeindex tree handleRequest (on testdata/ts-project)
   assert:
     - root node displays "fn handleRequest"
     - callers branch exists and is expandable
@@ -343,14 +343,14 @@ route: tree-symbol
     - q quits the application
 
 route: tree-file
-  launch: code-index tree --file src/api/handler.ts (on testdata/ts-project)
+  launch: codeindex tree --file src/api/handler.ts (on testdata/ts-project)
   assert:
     - file header shows file path
     - all symbols from fixture are listed
     - symbols grouped by kind (functions, types, imports)
 
 route: tree-stale
-  launch: code-index tree handleRequest (with stale file in testdata)
+  launch: codeindex tree handleRequest (with stale file in testdata)
   assert:
     - stale node shows [stale] suffix
     - stale node has dimmed styling

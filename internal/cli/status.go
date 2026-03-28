@@ -58,7 +58,7 @@ func runStatus(cmd *cobra.Command, args []string) error {
 			data, _ := json.MarshalIndent(StatusOutput{}, "", "  ")
 			fmt.Fprintln(cmd.OutOrStdout(), string(data))
 		} else {
-			fmt.Fprintln(cmd.OutOrStdout(), "No index found. Run 'code-index init' to get started.")
+			fmt.Fprintln(cmd.OutOrStdout(), "No index found. Run 'codeindex init' to get started.")
 		}
 		return nil
 	}

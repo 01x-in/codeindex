@@ -14,13 +14,13 @@ func TestDefaultConfig(t *testing.T) {
 	cfg := config.DefaultConfig()
 	assert.Equal(t, 1, cfg.Version)
 	assert.Contains(t, cfg.Ignore, "node_modules")
-	assert.Equal(t, ".code-index", cfg.IndexPath)
+	assert.Equal(t, ".codeindex", cfg.IndexPath)
 	assert.Len(t, cfg.QueryPrimitives, 6)
 }
 
 func TestSaveAndLoad(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, ".code-index.yaml")
+	path := filepath.Join(dir, ".codeindex.yaml")
 
 	cfg := config.DefaultConfig()
 	cfg.Languages = []string{"typescript", "go"}
@@ -70,7 +70,7 @@ func TestValidateSchema(t *testing.T) {
 	cfg := config.Config{
 		Version:         1,
 		Languages:       []string{"typescript"},
-		IndexPath:       ".code-index",
+		IndexPath:       ".codeindex",
 		QueryPrimitives: []string{"find_symbol", "bogus_tool"},
 	}
 	errs := config.ValidateSchema(cfg)
@@ -85,7 +85,7 @@ func TestLoadOrDetect_ExplicitConfigWins(t *testing.T) {
 	cfg := config.Config{
 		Version:   1,
 		Languages: []string{"rust"},
-		IndexPath: ".code-index",
+		IndexPath: ".codeindex",
 	}
 	require.NoError(t, cfg.Save(filepath.Join(dir, config.ConfigFileName)))
 
@@ -98,7 +98,7 @@ func TestLoadOrDetect_ExplicitConfigWins(t *testing.T) {
 	assert.Equal(t, []string{"rust"}, loaded.Languages, "explicit config should win over auto-detection")
 	// Defaults should be filled in.
 	assert.Contains(t, loaded.Ignore, "node_modules")
-	assert.Equal(t, ".code-index", loaded.IndexPath)
+	assert.Equal(t, ".codeindex", loaded.IndexPath)
 }
 
 func TestLoadOrDetect_AutoDetectFallback(t *testing.T) {
@@ -115,7 +115,7 @@ func TestLoadOrDetect_AutoDetectFallback(t *testing.T) {
 	assert.Contains(t, cfg.Languages, "python")
 	// Defaults filled in.
 	assert.Contains(t, cfg.Ignore, "node_modules")
-	assert.Equal(t, ".code-index", cfg.IndexPath)
+	assert.Equal(t, ".codeindex", cfg.IndexPath)
 }
 
 func TestLoadOrDetect_NoConfigNoMarkers(t *testing.T) {
@@ -142,7 +142,7 @@ func TestLoadOrDetect_InvalidConfigReturnsError(t *testing.T) {
 }
 
 func TestLoadMissingFileReturnsError(t *testing.T) {
-	_, err := config.Load("/nonexistent/.code-index.yaml")
+	_, err := config.Load("/nonexistent/.codeindex.yaml")
 	assert.Error(t, err)
 	assert.True(t, config.IsNotFound(err) || true) // The error wraps os.ErrNotExist
 }
