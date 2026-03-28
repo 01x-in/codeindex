@@ -206,3 +206,64 @@ func TestAppLeftNavigatesToParent(t *testing.T) {
 	assert.Equal(t, 1, app.cursor)
 	assert.Equal(t, "callers", app.visible[1].Name)
 }
+
+func TestAppStaleNodeRendering(t *testing.T) {
+	root := sampleTree()
+	app := NewApp(root, "tree: handleRequest", false)
+
+	// Verify stale count in header
+	model, _ := app.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
+	app = model.(App)
+
+	view := app.View()
+	assert.Contains(t, view, "1 stale", "header should show stale count")
+
+	// Expand callees to see the stale node
+	model, _ = app.Update(tea.KeyMsg{Type: tea.KeyDown}) // callers
+	app = model.(App)
+	model, _ = app.Update(tea.KeyMsg{Type: tea.KeyDown}) // callees
+	app = model.(App)
+	model, _ = app.Update(tea.KeyMsg{Type: tea.KeyRight}) // expand callees
+	app = model.(App)
+
+	view = app.View()
+	assert.Contains(t, view, "[stale]", "stale node should show [stale] suffix")
+}
+
+func TestAppNoStaleIndicatorOnFreshNodes(t *testing.T) {
+	// Tree with no stale nodes
+	root := &TreeNode{
+		Name:     "freshFunc",
+		Kind:     "fn",
+		FilePath: "fresh.ts",
+		Line:     1,
+		Expanded: true,
+		Children: []*TreeNode{
+			NewGroupNode("callers", []*TreeNode{
+				{Name: "caller1", Kind: "fn", FilePath: "a.ts", Line: 5, Stale: false},
+			}),
+		},
+	}
+
+	app := NewApp(root, "test", false)
+	assert.Equal(t, 0, app.staleCount)
+
+	model, _ := app.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
+	app = model.(App)
+
+	view := app.View()
+	assert.NotContains(t, view, "stale", "no stale indicators on fresh tree")
+}
+
+func TestAppStaleCountMultiple(t *testing.T) {
+	root := &TreeNode{
+		Name: "root", Kind: "fn", Stale: true, Expanded: true,
+		Children: []*TreeNode{
+			{Name: "a", Kind: "fn", Stale: true},
+			{Name: "b", Kind: "fn", Stale: false},
+			{Name: "c", Kind: "fn", Stale: true},
+		},
+	}
+	app := NewApp(root, "test", false)
+	assert.Equal(t, 3, app.staleCount)
+}
