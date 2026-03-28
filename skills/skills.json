@@ -1,0 +1,47 @@
+{
+  "name": "code-index",
+  "version": "1.0.0",
+  "description": "Persistent structural knowledge graph for codebases — query symbols, references, and call chains via MCP tools",
+  "homepage": "https://github.com/01x-in/codeindex",
+  "repository": "https://github.com/01x-in/codeindex",
+  "author": "01x",
+  "license": "MIT",
+  "skills": {
+    "claude-code": {
+      "file": "claude-code/CLAUDE.md",
+      "format": "claude-md",
+      "install_path": ".claude/skills/code-index.md",
+      "description": "Code Index skill for Claude Code — structural code navigation via MCP"
+    },
+    "cursor": {
+      "file": "cursor/.cursorrules",
+      "format": "cursorrules",
+      "install_path": ".cursorrules",
+      "description": "Code Index skill for Cursor — structural code navigation via MCP"
+    },
+    "codex": {
+      "file": "codex/AGENTS.md",
+      "format": "agents-md",
+      "install_path": "AGENTS.md",
+      "description": "Code Index skill for Codex — structural code navigation via MCP"
+    }
+  },
+  "prerequisites": [
+    {
+      "name": "codeindex",
+      "check": "codeindex version",
+      "install_url": "https://github.com/01x-in/codeindex#installation",
+      "message": "codeindex CLI not found. Install: https://github.com/01x-in/codeindex#installation"
+    },
+    {
+      "name": "ast-grep",
+      "check": "ast-grep --version",
+      "install_url": "https://ast-grep.github.io/guide/quick-start.html",
+      "message": "ast-grep not found. Install: https://ast-grep.github.io/guide/quick-start.html"
+    }
+  ],
+  "post_install": {
+    "message": "Code Index skill installed. Run 'codeindex init' in your repo to create the index.",
+    "commands": []
+  }
+}
