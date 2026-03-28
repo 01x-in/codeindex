@@ -1,0 +1,36 @@
+# ast-grep YAML rules for Python symbol extraction.
+
+# Function definitions
+- id: py-function-def
+  language: Python
+  rule:
+    kind: function_definition
+  message: function definition
+
+# Class definitions
+- id: py-class-def
+  language: Python
+  rule:
+    kind: class_definition
+  message: class definition
+
+# Import statements
+- id: py-import
+  language: Python
+  rule:
+    kind: import_statement
+  message: import statement
+
+# From imports
+- id: py-from-import
+  language: Python
+  rule:
+    kind: import_from_statement
+  message: from import statement
+
+# Function calls
+- id: py-call-expr
+  language: Python
+  rule:
+    kind: call
+  message: function call
