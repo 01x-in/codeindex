@@ -3,11 +3,11 @@ package mcp_test
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/01x/codeindex/internal/graph"
 	"github.com/01x/codeindex/internal/hash"
@@ -67,15 +67,17 @@ func sendRequest(t *testing.T, server *mcp.Server, method string, id interface{}
 	reader := strings.NewReader(string(reqBytes) + "\n")
 	var writer bytes.Buffer
 
-	// Run server in a goroutine with single request.
+	// Run server synchronously — it will return when reader is exhausted (EOF).
+	done := make(chan error, 1)
 	go func() {
-		server.ServeWithIO(reader, &writer)
+		done <- server.ServeWithIO(reader, &writer)
 	}()
 
-	// Wait for response (the server will exit when reader is exhausted).
-	// A bit fragile but works for testing.
-	for writer.Len() == 0 {
-		// busy wait
+	// Wait for completion with a timeout.
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("sendRequest timed out waiting for server response")
 	}
 
 	var resp mcp.JSONRPCResponse
@@ -188,6 +190,26 @@ func TestMCPToolCall_InvalidParams(t *testing.T) {
 	assert.Contains(t, errData["type"], "codeindex.dev")
 }
 
+func TestMCPToolCall_ReindexInvalidFilePathType(t *testing.T) {
+	server, _, _ := setupMCPServer(t)
+
+	// file_path is a number, not a string — should return an error, not trigger full reindex.
+	params := mcp.ToolCallParams{
+		Name:      "reindex",
+		Arguments: map[string]interface{}{"file_path": float64(123)},
+	}
+
+	result, err := server.HandleToolCall(params)
+	require.NoError(t, err)
+	assert.True(t, result.IsError, "non-string file_path should be rejected")
+
+	var data map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(result.Content[0].Text), &data))
+	errData, ok := data["error"].(map[string]interface{})
+	require.True(t, ok)
+	assert.Contains(t, errData["detail"], "file_path must be a string")
+}
+
 func TestMCPToolCall_UnknownTool(t *testing.T) {
 	server, _, _ := setupMCPServer(t)
 
@@ -223,6 +245,3 @@ func TestMCPMalformedJSON(t *testing.T) {
 	output := writer.String()
 	assert.Contains(t, output, "Parse error")
 }
-
-// Suppress unused import warning.
-var _ = fmt.Sprintf

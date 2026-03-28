@@ -275,11 +275,21 @@ func (s *Server) toolGetReferences(params ToolCallParams, start time.Time) (Tool
 }
 
 func (s *Server) toolReindex(params ToolCallParams, start time.Time) (ToolResult, error) {
+	// Validate file_path type first — reject non-string values before checking config.
+	var filePath string
+	if raw, exists := params.Arguments["file_path"]; exists {
+		fp, ok := raw.(string)
+		if !ok {
+			return problemResult("https://codeindex.dev/errors/invalid-params", "Invalid Parameters", 400,
+				"file_path must be a string"), nil
+		}
+		filePath = fp
+	}
+
 	if s.reindexFn == nil {
 		return problemResult("https://codeindex.dev/errors/not-configured", "Reindex Not Configured", 500, "reindex function not configured"), nil
 	}
 
-	filePath, _ := params.Arguments["file_path"].(string)
 	if err := s.reindexFn(filePath); err != nil {
 		return ToolResult{}, err
 	}

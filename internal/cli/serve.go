@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/01x/codeindex/internal/config"
 	"github.com/01x/codeindex/internal/graph"
@@ -59,12 +60,19 @@ func runServe(cmd *cobra.Command, args []string) error {
 	reindexFn := func(filePath string) error {
 		runner := indexer.NewSubprocessRunner()
 		if filePath != "" {
+			// Validate the path stays within the project root.
+			absPath := filepath.Join(dir, filePath)
+			rel, err := filepath.Rel(dir, absPath)
+			if err != nil || strings.HasPrefix(rel, "..") {
+				return fmt.Errorf("path traversal denied: %s is outside the project root", filePath)
+			}
+
 			lang := languageForFile(filePath, cfg.Languages)
 			if lang == "" {
 				return fmt.Errorf("cannot determine language for %s", filePath)
 			}
 			idx := indexer.NewIndexer(store, runner, dir, lang)
-			_, err := idx.IndexFile(filepath.Join(dir, filePath))
+			_, err = idx.IndexFile(absPath)
 			return err
 		}
 		// Full reindex.

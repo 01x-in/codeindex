@@ -2,30 +2,15 @@ package indexer_test
 
 import (
 	"os"
-	"os/exec"
 	"path/filepath"
-	"runtime"
 	"testing"
 
 	"github.com/01x/codeindex/internal/graph"
 	"github.com/01x/codeindex/internal/indexer"
+	"github.com/01x/codeindex/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func repoRoot(t *testing.T) string {
-	t.Helper()
-	_, filename, _, ok := runtime.Caller(0)
-	require.True(t, ok)
-	return filepath.Join(filepath.Dir(filename), "..", "..")
-}
-
-func skipIfNoAstGrep(t *testing.T) {
-	t.Helper()
-	if _, err := exec.LookPath("ast-grep"); err != nil {
-		t.Skip("ast-grep not found in PATH — skipping integration test")
-	}
-}
 
 func TestIndexFile_MockRunner(t *testing.T) {
 	store, err := graph.NewSQLiteStore(":memory:")
@@ -71,9 +56,9 @@ func TestIndexFile_MockRunner(t *testing.T) {
 }
 
 func TestIndexFile_Integration(t *testing.T) {
-	skipIfNoAstGrep(t)
+	testutil.SkipIfNoAstGrep(t)
 
-	root := repoRoot(t)
+	root := testutil.RepoRoot(t)
 	fixtureDir := filepath.Join(root, "testdata", "ts-project")
 
 	store, err := graph.NewSQLiteStore(":memory:")
@@ -107,9 +92,9 @@ func TestIndexFile_Integration(t *testing.T) {
 }
 
 func TestIndexAll_Integration(t *testing.T) {
-	skipIfNoAstGrep(t)
+	testutil.SkipIfNoAstGrep(t)
 
-	root := repoRoot(t)
+	root := testutil.RepoRoot(t)
 	fixtureDir := filepath.Join(root, "testdata", "ts-project")
 
 	store, err := graph.NewSQLiteStore(":memory:")
@@ -165,4 +150,29 @@ func TestIndexFile_AstGrepError(t *testing.T) {
 	meta, err := store.GetFileMetadata(relPath)
 	require.NoError(t, err)
 	assert.Equal(t, "error", meta.IndexStatus)
+}
+
+func TestIsStale_ErrorStatusFiles(t *testing.T) {
+	store, err := graph.NewSQLiteStore(":memory:")
+	require.NoError(t, err)
+	require.NoError(t, store.Migrate())
+	defer store.Close()
+
+	dir := t.TempDir()
+	testFile := filepath.Join(dir, "test.ts")
+	content := []byte(`const x = 1;`)
+	require.NoError(t, os.WriteFile(testFile, content, 0644))
+
+	mockRunner := &indexer.MockRunner{Err: assert.AnError}
+	idx := indexer.NewIndexer(store, mockRunner, dir, "typescript")
+
+	// Index the file — will result in error status.
+	_, err = idx.IndexFile(testFile)
+	require.NoError(t, err)
+
+	// File should be considered stale even though content hasn't changed,
+	// because previous index had error status.
+	stale, err := idx.IsStale(testFile)
+	require.NoError(t, err)
+	assert.True(t, stale, "files with error index status should be considered stale for retry")
 }

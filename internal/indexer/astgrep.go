@@ -62,10 +62,9 @@ func (r *SubprocessRunner) ScanWithInlineRules(rules string, targetPath string) 
 				return nil, fmt.Errorf("ast-grep scan failed (exit %d): %s", exitErr.ExitCode(), string(exitErr.Stderr))
 			}
 			// Exit code 1 with output is fine — it means matches were found.
-			output = exitErr.Stderr
-			if len(cmd.ProcessState.String()) > 0 {
-				// Try to use stdout from the command
-			}
+			// cmd.Output() already captured stdout in the `output` variable above.
+			// When ExitError occurs, `output` still contains the stdout data.
+			// No need to reassign — just fall through to parse it.
 		} else {
 			return nil, fmt.Errorf("running ast-grep: %w", err)
 		}
