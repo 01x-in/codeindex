@@ -77,7 +77,7 @@ func (b *SymbolTreeBuilder) BuildFileTree(filePath string) (*TreeNode, error) {
 		return nil, fmt.Errorf("finding file nodes: %w", err)
 	}
 	if len(nodes) == 0 {
-		return nil, fmt.Errorf("file %q not indexed. Run 'code-index reindex %s' first", filePath, filePath)
+		return nil, fmt.Errorf("file %q not indexed. Run 'codeindex reindex %s' first", filePath, filePath)
 	}
 
 	stale := b.isStale(filePath)

@@ -53,7 +53,7 @@ func runTree(cmd *cobra.Command, args []string) error {
 	// Open graph store.
 	dbPath := filepath.Join(dir, cfg.IndexPath, "graph.db")
 	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
-		return fmt.Errorf("no index found. Run 'code-index init' to get started")
+		return fmt.Errorf("no index found. Run 'codeindex init' to get started")
 	}
 
 	store, err := graph.NewSQLiteStore(dbPath)
