@@ -61,15 +61,37 @@ type ReferenceResult struct {
 // CallerResult represents a caller in the call graph.
 type CallerResult struct {
 	Name  string `json:"name"`
+	Kind  string `json:"kind"`
 	File  string `json:"file"`
 	Line  int    `json:"line"`
+	Depth int    `json:"depth"`
 	Stale bool   `json:"stale"`
+}
+
+// SubgraphNode is a compact node representation for subgraph responses.
+type SubgraphNode struct {
+	ID       int64  `json:"id"`
+	Name     string `json:"name"`
+	Kind     string `json:"kind"`
+	File     string `json:"file"`
+	Line     int    `json:"line"`
+	Exported bool   `json:"exported"`
+	Stale    bool   `json:"stale"`
+}
+
+// SubgraphEdge is a compact edge representation for subgraph responses.
+type SubgraphEdge struct {
+	SourceID int64  `json:"source_id"`
+	TargetID int64  `json:"target_id"`
+	Kind     string `json:"kind"`
+	File     string `json:"file"`
+	Line     int    `json:"line"`
 }
 
 // Subgraph represents a neighborhood of the knowledge graph.
 type Subgraph struct {
-	Nodes []graph.Node `json:"nodes"`
-	Edges []graph.Edge `json:"edges"`
+	Nodes []SubgraphNode `json:"nodes"`
+	Edges []SubgraphEdge `json:"edges"`
 }
 
 // QueryMetadata holds metadata about a query response.
