@@ -171,6 +171,20 @@ func (a App) updateNormal(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		a.searchQuery = ""
 		a.matches = nil
 		a.matchIdx = 0
+
+	case key.Matches(msg, a.keys.NextMatch):
+		if len(a.matches) > 0 {
+			a.matchIdx = (a.matchIdx + 1) % len(a.matches)
+			a.cursor = a.matches[a.matchIdx]
+			a.ensureVisible()
+		}
+
+	case key.Matches(msg, a.keys.PrevMatch):
+		if len(a.matches) > 0 {
+			a.matchIdx = (a.matchIdx - 1 + len(a.matches)) % len(a.matches)
+			a.cursor = a.matches[a.matchIdx]
+			a.ensureVisible()
+		}
 	}
 
 	return a, nil
@@ -345,8 +359,6 @@ func (a App) renderTreeLine(node *TreeNode, globalIdx int) string {
 		} else {
 			sb.WriteString(a.styles.BranchCollapsed)
 		}
-	} else if node.depth > 0 {
-		// Leaf connector already in indent
 	}
 
 	// Node display name
@@ -372,7 +384,6 @@ func (a App) renderTreeLine(node *TreeNode, globalIdx int) string {
 	// Truncate to width
 	rendered := sb.String()
 	if lipgloss.Width(rendered) > a.width && a.width > 3 {
-		// Simple truncation - count visible width
 		rendered = rendered[:a.width-3] + "..."
 	}
 
