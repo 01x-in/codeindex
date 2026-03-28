@@ -11,6 +11,7 @@ type Store interface {
 	UpsertEdge(edge Edge) error
 	SetFileMetadata(meta FileMetadata) error
 	DeleteFileData(filePath string) error // removes all nodes/edges for a file
+	SetIndexMetadata(key string, value string) error
 
 	// Read operations (used by query engine)
 	GetNode(id int64) (Node, error)
@@ -20,6 +21,7 @@ type Store interface {
 	GetEdgesTo(nodeID int64, kind string) ([]Edge, error)
 	GetFileMetadata(filePath string) (FileMetadata, error)
 	GetAllFileMetadata() ([]FileMetadata, error)
+	GetIndexMetadata(key string) (string, error)
 
 	// Graph traversal
 	GetNeighborhood(nodeID int64, depth int, edgeKinds []string) ([]Node, []Edge, error)

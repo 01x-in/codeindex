@@ -1,7 +1,7 @@
 # Build artifacts
 bin/
 dist/
-build/
+/build/
 
 # Code Index data
 .code-index/
