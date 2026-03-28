@@ -42,6 +42,18 @@ func LoadPreview(filePath string, line int) (Preview, error) {
 		return Preview{}, fmt.Errorf("reading file: %w", err)
 	}
 
+	// Clamp line to file bounds to avoid panic on stale nodes.
+	if len(allLines) == 0 {
+		return Preview{
+			FilePath: filePath,
+			Line:     line,
+			Visible:  true,
+		}, nil
+	}
+	if line > len(allLines) {
+		line = len(allLines)
+	}
+
 	startLine := line - contextLines
 	if startLine < 1 {
 		startLine = 1

@@ -129,7 +129,7 @@ func (a App) updateNormal(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			node := a.visible[a.cursor]
 			if node.HasChildren() && !node.Expanded {
 				node.Expanded = true
-				a.visible = Flatten(a.root)
+				a.refreshVisible()
 			}
 		}
 
@@ -138,7 +138,7 @@ func (a App) updateNormal(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			node := a.visible[a.cursor]
 			if node.HasChildren() && node.Expanded {
 				node.Expanded = false
-				a.visible = Flatten(a.root)
+				a.refreshVisible()
 			} else if node.parent != nil {
 				// Navigate to parent
 				for i, n := range a.visible {
@@ -156,7 +156,7 @@ func (a App) updateNormal(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			node := a.visible[a.cursor]
 			if node.HasChildren() {
 				node.Toggle()
-				a.visible = Flatten(a.root)
+				a.refreshVisible()
 			} else if node.FilePath != "" && node.Line > 0 {
 				preview, err := LoadPreview(node.FilePath, node.Line)
 				if err == nil {
@@ -175,15 +175,21 @@ func (a App) updateNormal(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case key.Matches(msg, a.keys.NextMatch):
 		if len(a.matches) > 0 {
 			a.matchIdx = (a.matchIdx + 1) % len(a.matches)
-			a.cursor = a.matches[a.matchIdx]
-			a.ensureVisible()
+			idx := a.matches[a.matchIdx]
+			if idx < len(a.visible) {
+				a.cursor = idx
+				a.ensureVisible()
+			}
 		}
 
 	case key.Matches(msg, a.keys.PrevMatch):
 		if len(a.matches) > 0 {
 			a.matchIdx = (a.matchIdx - 1 + len(a.matches)) % len(a.matches)
-			a.cursor = a.matches[a.matchIdx]
-			a.ensureVisible()
+			idx := a.matches[a.matchIdx]
+			if idx < len(a.visible) {
+				a.cursor = idx
+				a.ensureVisible()
+			}
 		}
 	}
 
@@ -247,6 +253,24 @@ func (a *App) updateMatches() {
 	if len(a.matches) > 0 {
 		a.cursor = a.matches[0]
 		a.ensureVisible()
+	}
+}
+
+// refreshVisible re-flattens the tree and invalidates stale search matches.
+func (a *App) refreshVisible() {
+	a.visible = Flatten(a.root)
+	// Clamp cursor to new visible bounds.
+	if a.cursor >= len(a.visible) {
+		a.cursor = len(a.visible) - 1
+	}
+	if a.cursor < 0 {
+		a.cursor = 0
+	}
+	// Refresh search matches if a search is active.
+	if a.searchQuery != "" {
+		a.updateMatches()
+	} else {
+		a.matches = nil
 	}
 }
 
