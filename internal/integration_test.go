@@ -3,9 +3,7 @@ package integration_test
 import (
 	"encoding/json"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"runtime"
 	"testing"
 
 	"github.com/01x/codeindex/internal/config"
@@ -13,29 +11,16 @@ import (
 	"github.com/01x/codeindex/internal/indexer"
 	"github.com/01x/codeindex/internal/mcp"
 	"github.com/01x/codeindex/internal/query"
+	"github.com/01x/codeindex/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func repoRoot(t *testing.T) string {
-	t.Helper()
-	_, filename, _, ok := runtime.Caller(0)
-	require.True(t, ok)
-	return filepath.Dir(filename) + "/.."
-}
-
-func skipIfNoAstGrep(t *testing.T) {
-	t.Helper()
-	if _, err := exec.LookPath("ast-grep"); err != nil {
-		t.Skip("ast-grep not found in PATH -- skipping integration test")
-	}
-}
-
 // TestEndToEnd_FullWorkflow tests: init -> index -> query -> modify -> detect stale -> reindex -> query updated.
 func TestEndToEnd_FullWorkflow(t *testing.T) {
-	skipIfNoAstGrep(t)
+	testutil.SkipIfNoAstGrep(t)
 
-	root := repoRoot(t)
+	root := testutil.RepoRoot(t)
 	fixtureDir := filepath.Join(root, "testdata", "ts-project")
 
 	// Step 1: Detect config (simulating init).
@@ -127,9 +112,9 @@ func TestEndToEnd_FullWorkflow(t *testing.T) {
 
 // TestEndToEnd_MCPProtocol validates MCP protocol compliance with tool calls.
 func TestEndToEnd_MCPProtocol(t *testing.T) {
-	skipIfNoAstGrep(t)
+	testutil.SkipIfNoAstGrep(t)
 
-	root := repoRoot(t)
+	root := testutil.RepoRoot(t)
 	fixtureDir := filepath.Join(root, "testdata", "ts-project")
 
 	store, err := graph.NewSQLiteStore(":memory:")

@@ -262,6 +262,10 @@ func (idx *Indexer) IndexStale() ([]IndexResult, error) {
 }
 
 // IsStale checks if a file has changed since last indexing.
+// A file is considered stale if:
+// - It has never been indexed
+// - Its content hash has changed since last indexing
+// - Its previous index attempt resulted in an error status
 func (idx *Indexer) IsStale(filePath string) (bool, error) {
 	absPath := filePath
 	if !filepath.IsAbs(filePath) {
@@ -276,6 +280,11 @@ func (idx *Indexer) IsStale(filePath string) (bool, error) {
 	meta, err := idx.store.GetFileMetadata(relPath)
 	if err != nil {
 		// File not indexed yet = stale.
+		return true, nil
+	}
+
+	// Files with prior index errors should always be retried.
+	if meta.IndexStatus == "error" || meta.IndexStatus == "partial" {
 		return true, nil
 	}
 
@@ -307,6 +316,11 @@ func IsStaleFile(store graph.Store, repoRoot string, filePath string) (bool, err
 		if errors.Is(err, sql.ErrNoRows) {
 			return true, nil
 		}
+		return true, nil
+	}
+
+	// Files with prior index errors should always be retried.
+	if meta.IndexStatus == "error" || meta.IndexStatus == "partial" {
 		return true, nil
 	}
 
