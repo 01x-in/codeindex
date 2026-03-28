@@ -1,6 +1,9 @@
 package tui
 
 import (
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -28,6 +31,39 @@ func sampleTree() *TreeNode {
 	}
 }
 
+func sampleTreeWithRealFile(t *testing.T) (*TreeNode, string) {
+	t.Helper()
+	tmpDir := t.TempDir()
+	testFile := filepath.Join(tmpDir, "handler.ts")
+	lines := []string{
+		"import { validate } from './validate';",
+		"",
+		"export function handleRequest(req: Request): Response {",
+		"  const input = validate(req.body);",
+		"  return new Response(input);",
+		"}",
+		"",
+		"function helper() {",
+		"  return true;",
+		"}",
+	}
+	require.NoError(t, os.WriteFile(testFile, []byte(strings.Join(lines, "\n")), 0644))
+
+	root := &TreeNode{
+		Name:     "handleRequest",
+		Kind:     "fn",
+		FilePath: testFile,
+		Line:     3,
+		Expanded: true,
+		Children: []*TreeNode{
+			NewGroupNode("callers", []*TreeNode{
+				{Name: "routeRequest", Kind: "fn", FilePath: testFile, Line: 8},
+			}),
+		},
+	}
+	return root, tmpDir
+}
+
 func TestNewApp(t *testing.T) {
 	root := sampleTree()
 	app := NewApp(root, "tree: handleRequest", true)
@@ -49,15 +85,12 @@ func TestAppQuit(t *testing.T) {
 	root := sampleTree()
 	app := NewApp(root, "test", false)
 
-	// Set size
 	model, _ := app.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
 	app = model.(App)
 
-	// Press q
 	model, cmd := app.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("q")})
 	_ = model.(App)
 	require.NotNil(t, cmd)
-	// Verify it's a quit command by checking the message
 	msg := cmd()
 	assert.IsType(t, tea.QuitMsg{}, msg)
 }
@@ -69,22 +102,18 @@ func TestAppNavigateUpDown(t *testing.T) {
 	model, _ := app.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
 	app = model.(App)
 
-	// Move down
 	model, _ = app.Update(tea.KeyMsg{Type: tea.KeyDown})
 	app = model.(App)
 	assert.Equal(t, 1, app.cursor)
 
-	// Move down again
 	model, _ = app.Update(tea.KeyMsg{Type: tea.KeyDown})
 	app = model.(App)
 	assert.Equal(t, 2, app.cursor)
 
-	// Move up
 	model, _ = app.Update(tea.KeyMsg{Type: tea.KeyUp})
 	app = model.(App)
 	assert.Equal(t, 1, app.cursor)
 
-	// Move up past start
 	model, _ = app.Update(tea.KeyMsg{Type: tea.KeyUp})
 	app = model.(App)
 	assert.Equal(t, 0, app.cursor)
@@ -100,20 +129,16 @@ func TestAppExpandCollapse(t *testing.T) {
 	model, _ := app.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
 	app = model.(App)
 
-	// Move to "callers" group (index 1)
 	model, _ = app.Update(tea.KeyMsg{Type: tea.KeyDown})
 	app = model.(App)
 
-	// Expand with right arrow
 	model, _ = app.Update(tea.KeyMsg{Type: tea.KeyRight})
 	app = model.(App)
 
-	// Should now have: root, callers (expanded), routeRequest, processWebhook, callees
 	require.Len(t, app.visible, 5)
 	assert.Equal(t, "routeRequest", app.visible[2].Name)
 	assert.Equal(t, "processWebhook", app.visible[3].Name)
 
-	// Collapse with left arrow
 	model, _ = app.Update(tea.KeyMsg{Type: tea.KeyLeft})
 	app = model.(App)
 	require.Len(t, app.visible, 3)
@@ -126,17 +151,14 @@ func TestAppEnterToggle(t *testing.T) {
 	model, _ := app.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
 	app = model.(App)
 
-	// Move to "callers" group
 	model, _ = app.Update(tea.KeyMsg{Type: tea.KeyDown})
 	app = model.(App)
 
-	// Enter on branch node toggles expand
 	model, _ = app.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	app = model.(App)
 	assert.True(t, app.visible[1].Expanded)
 	require.Len(t, app.visible, 5)
 
-	// Enter again collapses
 	model, _ = app.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	app = model.(App)
 	assert.False(t, app.visible[1].Expanded)
@@ -152,7 +174,6 @@ func TestAppWindowResize(t *testing.T) {
 	assert.Equal(t, 120, app.width)
 	assert.Equal(t, 40, app.height)
 
-	// Resize
 	model, _ = app.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
 	app = model.(App)
 	assert.Equal(t, 80, app.width)
@@ -177,7 +198,6 @@ func TestAppView(t *testing.T) {
 func TestAppViewLoading(t *testing.T) {
 	root := sampleTree()
 	app := NewApp(root, "test", false)
-	// No size set yet
 	assert.Equal(t, "Loading...", app.View())
 }
 
@@ -188,19 +208,16 @@ func TestAppLeftNavigatesToParent(t *testing.T) {
 	model, _ := app.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
 	app = model.(App)
 
-	// Expand callers
 	model, _ = app.Update(tea.KeyMsg{Type: tea.KeyDown})
 	app = model.(App)
 	model, _ = app.Update(tea.KeyMsg{Type: tea.KeyRight})
 	app = model.(App)
 
-	// Move to a leaf child (routeRequest at index 2)
 	model, _ = app.Update(tea.KeyMsg{Type: tea.KeyDown})
 	app = model.(App)
 	assert.Equal(t, 2, app.cursor)
 	assert.Equal(t, "routeRequest", app.visible[2].Name)
 
-	// Left on leaf should go to parent (callers at index 1)
 	model, _ = app.Update(tea.KeyMsg{Type: tea.KeyLeft})
 	app = model.(App)
 	assert.Equal(t, 1, app.cursor)
@@ -211,14 +228,12 @@ func TestAppStaleNodeRendering(t *testing.T) {
 	root := sampleTree()
 	app := NewApp(root, "tree: handleRequest", false)
 
-	// Verify stale count in header
 	model, _ := app.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
 	app = model.(App)
 
 	view := app.View()
 	assert.Contains(t, view, "1 stale", "header should show stale count")
 
-	// Expand callees to see the stale node
 	model, _ = app.Update(tea.KeyMsg{Type: tea.KeyDown}) // callers
 	app = model.(App)
 	model, _ = app.Update(tea.KeyMsg{Type: tea.KeyDown}) // callees
@@ -231,7 +246,6 @@ func TestAppStaleNodeRendering(t *testing.T) {
 }
 
 func TestAppNoStaleIndicatorOnFreshNodes(t *testing.T) {
-	// Tree with no stale nodes
 	root := &TreeNode{
 		Name:     "freshFunc",
 		Kind:     "fn",
@@ -266,4 +280,82 @@ func TestAppStaleCountMultiple(t *testing.T) {
 	}
 	app := NewApp(root, "test", false)
 	assert.Equal(t, 3, app.staleCount)
+}
+
+func TestAppEnterOnLeafOpensPreview(t *testing.T) {
+	root, _ := sampleTreeWithRealFile(t)
+	app := NewApp(root, "test", false)
+
+	model, _ := app.Update(tea.WindowSizeMsg{Width: 80, Height: 40})
+	app = model.(App)
+
+	// Expand callers group
+	model, _ = app.Update(tea.KeyMsg{Type: tea.KeyDown}) // callers
+	app = model.(App)
+	model, _ = app.Update(tea.KeyMsg{Type: tea.KeyRight}) // expand
+	app = model.(App)
+
+	// Move to leaf node (routeRequest)
+	model, _ = app.Update(tea.KeyMsg{Type: tea.KeyDown}) // routeRequest
+	app = model.(App)
+	assert.Equal(t, 2, app.cursor)
+	assert.True(t, app.visible[2].IsLeaf())
+
+	// Press Enter on leaf to open preview
+	model, _ = app.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	app = model.(App)
+	assert.Equal(t, ModePreview, app.mode)
+	assert.True(t, app.preview.Visible)
+
+	// View should contain preview content
+	view := app.View()
+	assert.Contains(t, view, "handler.ts")
+}
+
+func TestAppEscClosesPreview(t *testing.T) {
+	root, _ := sampleTreeWithRealFile(t)
+	app := NewApp(root, "test", false)
+
+	model, _ := app.Update(tea.WindowSizeMsg{Width: 80, Height: 40})
+	app = model.(App)
+
+	// Expand callers, navigate to leaf, open preview
+	model, _ = app.Update(tea.KeyMsg{Type: tea.KeyDown})
+	app = model.(App)
+	model, _ = app.Update(tea.KeyMsg{Type: tea.KeyRight})
+	app = model.(App)
+	model, _ = app.Update(tea.KeyMsg{Type: tea.KeyDown})
+	app = model.(App)
+	model, _ = app.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	app = model.(App)
+	assert.Equal(t, ModePreview, app.mode)
+
+	// Esc closes preview
+	model, _ = app.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	app = model.(App)
+	assert.Equal(t, ModeNormal, app.mode)
+	assert.False(t, app.preview.Visible)
+}
+
+func TestAppPreviewViewContainsSourceLines(t *testing.T) {
+	root, _ := sampleTreeWithRealFile(t)
+	app := NewApp(root, "test", false)
+
+	model, _ := app.Update(tea.WindowSizeMsg{Width: 80, Height: 40})
+	app = model.(App)
+
+	// Navigate to root (which has a real file), press Enter
+	// Root has children so Enter toggles. Navigate to leaf instead.
+	model, _ = app.Update(tea.KeyMsg{Type: tea.KeyDown})
+	app = model.(App)
+	model, _ = app.Update(tea.KeyMsg{Type: tea.KeyRight})
+	app = model.(App)
+	model, _ = app.Update(tea.KeyMsg{Type: tea.KeyDown})
+	app = model.(App)
+	model, _ = app.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	app = model.(App)
+
+	view := app.View()
+	// Should contain line numbers and source content
+	assert.Contains(t, view, "handler.ts")
 }
