@@ -118,6 +118,28 @@ func (s *SQLiteStore) SetFileMetadata(meta FileMetadata) error {
 	return nil
 }
 
+// SetIndexMetadata sets a key-value pair in the index_metadata table.
+func (s *SQLiteStore) SetIndexMetadata(key string, value string) error {
+	_, err := s.db.Exec(`
+		INSERT INTO index_metadata (key, value) VALUES (?, ?)
+		ON CONFLICT(key) DO UPDATE SET value = excluded.value
+	`, key, value)
+	if err != nil {
+		return fmt.Errorf("setting index metadata %q: %w", key, err)
+	}
+	return nil
+}
+
+// GetIndexMetadata gets a value from the index_metadata table.
+func (s *SQLiteStore) GetIndexMetadata(key string) (string, error) {
+	var value string
+	err := s.db.QueryRow(`SELECT value FROM index_metadata WHERE key = ?`, key).Scan(&value)
+	if err != nil {
+		return "", fmt.Errorf("getting index metadata %q: %w", key, err)
+	}
+	return value, nil
+}
+
 // DeleteFileData removes all nodes, edges, and metadata for a file.
 func (s *SQLiteStore) DeleteFileData(filePath string) error {
 	tx, err := s.db.Begin()
@@ -289,7 +311,6 @@ func (s *SQLiteStore) GetNeighborhood(nodeID int64, depth int, edgeKinds []strin
 		depth = 10
 	}
 
-	// BFS traversal collecting node IDs, deduplicating edges by ID.
 	visited := map[int64]bool{nodeID: true}
 	seenEdges := map[int64]bool{}
 	frontier := []int64{nodeID}
@@ -298,7 +319,6 @@ func (s *SQLiteStore) GetNeighborhood(nodeID int64, depth int, edgeKinds []strin
 	for d := 0; d < depth && len(frontier) > 0; d++ {
 		var nextFrontier []int64
 		for _, nid := range frontier {
-			// Get outgoing edges.
 			outEdges, err := s.getFilteredEdgesFrom(nid, edgeKinds)
 			if err != nil {
 				return nil, nil, err
@@ -314,7 +334,6 @@ func (s *SQLiteStore) GetNeighborhood(nodeID int64, depth int, edgeKinds []strin
 				}
 			}
 
-			// Get incoming edges.
 			inEdges, err := s.getFilteredEdgesTo(nid, edgeKinds)
 			if err != nil {
 				return nil, nil, err
@@ -333,7 +352,6 @@ func (s *SQLiteStore) GetNeighborhood(nodeID int64, depth int, edgeKinds []strin
 		frontier = nextFrontier
 	}
 
-	// Collect all visited nodes.
 	var nodes []Node
 	for nid := range visited {
 		node, err := s.GetNode(nid)
@@ -344,6 +362,20 @@ func (s *SQLiteStore) GetNeighborhood(nodeID int64, depth int, edgeKinds []strin
 	}
 
 	return nodes, allEdges, nil
+}
+
+// NodeCount returns the total number of nodes in the graph.
+func (s *SQLiteStore) NodeCount() (int, error) {
+	var count int
+	err := s.db.QueryRow(`SELECT COUNT(*) FROM nodes`).Scan(&count)
+	return count, err
+}
+
+// EdgeCount returns the total number of edges in the graph.
+func (s *SQLiteStore) EdgeCount() (int, error) {
+	var count int
+	err := s.db.QueryRow(`SELECT COUNT(*) FROM edges`).Scan(&count)
+	return count, err
 }
 
 func (s *SQLiteStore) getFilteredEdgesFrom(nodeID int64, edgeKinds []string) ([]Edge, error) {

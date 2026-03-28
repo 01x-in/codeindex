@@ -16,7 +16,8 @@ CREATE TABLE IF NOT EXISTS nodes (
     exported    INTEGER NOT NULL DEFAULT 0,
     language    TEXT    NOT NULL,
     created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
-    updated_at  TEXT    NOT NULL DEFAULT (datetime('now'))
+    updated_at  TEXT    NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(name, kind, file_path, line_start)
 );
 
 CREATE INDEX IF NOT EXISTS idx_nodes_name ON nodes(name);

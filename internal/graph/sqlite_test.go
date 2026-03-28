@@ -1,6 +1,8 @@
 package graph_test
 
 import (
+	"path/filepath"
+	"sync"
 	"testing"
 
 	"github.com/01x/codeindex/internal/graph"
@@ -11,6 +13,16 @@ import (
 func setupTestStore(t *testing.T) *graph.SQLiteStore {
 	t.Helper()
 	store, err := graph.NewSQLiteStore(":memory:")
+	require.NoError(t, err)
+	require.NoError(t, store.Migrate())
+	t.Cleanup(func() { store.Close() })
+	return store
+}
+
+func setupFileTestStore(t *testing.T) *graph.SQLiteStore {
+	t.Helper()
+	dbPath := filepath.Join(t.TempDir(), "test.db")
+	store, err := graph.NewSQLiteStore(dbPath)
 	require.NoError(t, err)
 	require.NoError(t, store.Migrate())
 	t.Cleanup(func() { store.Close() })
@@ -48,6 +60,46 @@ func TestUpsertAndGetNode(t *testing.T) {
 	assert.Equal(t, "fn", got.Kind)
 	assert.Equal(t, "src/api/handler.ts", got.FilePath)
 	assert.True(t, got.Exported)
+}
+
+func TestUpsertNodeUpdatesExisting(t *testing.T) {
+	store := setupTestStore(t)
+
+	// Insert a node.
+	node := graph.Node{
+		Name:      "myFunc",
+		Kind:      "fn",
+		FilePath:  "a.ts",
+		LineStart: 10,
+		LineEnd:   15,
+		ColStart:  0,
+		ColEnd:    1,
+		Exported:  false,
+		Language:  "typescript",
+		Signature: "(): void",
+	}
+
+	_, err := store.UpsertNode(node)
+	require.NoError(t, err)
+
+	// Upsert same node with updated fields.
+	node.LineEnd = 20
+	node.Exported = true
+	node.Signature = "(x: number): string"
+
+	_, err = store.UpsertNode(node)
+	require.NoError(t, err)
+
+	// Should reuse the same row (not create a duplicate).
+	nodes, err := store.FindNodesByName("myFunc")
+	require.NoError(t, err)
+	assert.Len(t, nodes, 1, "upsert should not create duplicates")
+
+	// Verify updated fields.
+	got := nodes[0]
+	assert.Equal(t, 20, got.LineEnd)
+	assert.True(t, got.Exported)
+	assert.Equal(t, "(x: number): string", got.Signature)
 }
 
 func TestFindNodesByName(t *testing.T) {
@@ -129,6 +181,27 @@ func TestDeleteFileData(t *testing.T) {
 	assert.Len(t, other, 1)
 }
 
+func TestCascadeDeleteEdgesOnNodeDelete(t *testing.T) {
+	store := setupTestStore(t)
+
+	id1, err := store.UpsertNode(graph.Node{Name: "a", Kind: "fn", FilePath: "a.ts", LineStart: 1, LineEnd: 5, Language: "typescript"})
+	require.NoError(t, err)
+	id2, err := store.UpsertNode(graph.Node{Name: "b", Kind: "fn", FilePath: "b.ts", LineStart: 1, LineEnd: 5, Language: "typescript"})
+	require.NoError(t, err)
+
+	err = store.UpsertEdge(graph.Edge{SourceID: id1, TargetID: id2, Kind: "calls", FilePath: "a.ts", Line: 3})
+	require.NoError(t, err)
+
+	// Delete file a.ts, which removes node id1.
+	err = store.DeleteFileData("a.ts")
+	require.NoError(t, err)
+
+	// Edges referencing id1 should be gone.
+	edges, err := store.GetEdgesTo(id2, "")
+	require.NoError(t, err)
+	assert.Len(t, edges, 0, "cascade delete should remove edges when source node is deleted")
+}
+
 func TestFileMetadata(t *testing.T) {
 	store := setupTestStore(t)
 
@@ -173,4 +246,48 @@ func TestGetNeighborhood(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, nodes2, 3) // a, b, and c (depth 2)
 	assert.Len(t, edges2, 2)
+}
+
+func TestConcurrentReads(t *testing.T) {
+	// Use file-based DB for concurrent access (in-memory has connection isolation issues).
+	store := setupFileTestStore(t)
+
+	// Populate some data.
+	for i := 0; i < 20; i++ {
+		_, err := store.UpsertNode(graph.Node{
+			Name:      "func" + string(rune('A'+i)),
+			Kind:      "fn",
+			FilePath:  "concurrent.ts",
+			LineStart: i * 10,
+			LineEnd:   i*10 + 5,
+			Language:  "typescript",
+		})
+		require.NoError(t, err)
+	}
+
+	// Run concurrent reads.
+	var wg sync.WaitGroup
+	errs := make(chan error, 100)
+
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			nodes, err := store.FindNodesByFile("concurrent.ts")
+			if err != nil {
+				errs <- err
+				return
+			}
+			if len(nodes) != 20 {
+				errs <- assert.AnError
+			}
+		}()
+	}
+
+	wg.Wait()
+	close(errs)
+
+	for err := range errs {
+		t.Errorf("concurrent read error: %v", err)
+	}
 }
