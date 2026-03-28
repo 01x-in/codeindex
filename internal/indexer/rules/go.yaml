@@ -1,0 +1,47 @@
+# ast-grep YAML rules for Go symbol extraction.
+
+# Function definitions
+- id: go-function-def
+  language: Go
+  rule:
+    kind: function_declaration
+  message: function definition
+
+# Method definitions
+- id: go-method-def
+  language: Go
+  rule:
+    kind: method_declaration
+  message: method definition
+
+# Struct definitions
+- id: go-struct-def
+  language: Go
+  rule:
+    kind: type_declaration
+    has:
+      kind: struct_type
+  message: struct definition
+
+# Interface definitions
+- id: go-interface-def
+  language: Go
+  rule:
+    kind: type_declaration
+    has:
+      kind: interface_type
+  message: interface definition
+
+# Import declarations
+- id: go-import
+  language: Go
+  rule:
+    kind: import_declaration
+  message: import declaration
+
+# Function calls
+- id: go-call-expr
+  language: Go
+  rule:
+    kind: call_expression
+  message: function call
