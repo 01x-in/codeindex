@@ -11,6 +11,7 @@
 - Date: 2026-03-28
 - Branch: milestone/1
 - Status: COMPLETE
+- PR: #2 (open, review fixes pushed)
 
 ### Stories Completed
 | ID | Description | Commit |
@@ -26,9 +27,19 @@
 | M1-S9 | Query engine: get_file_structure, find_symbol, get_references | 2fe3e78 |
 | M1-S10 | End-to-end integration tests (full workflow + MCP protocol compliance) | b068dcc |
 
+### PR Review Fixes
+| Issue | Fix | Commit |
+|-------|-----|--------|
+| astgrep.go: stdout overwritten with stderr on exit code 1 | Removed erroneous stderr assignment | b6c901c |
+| indexer.go: error-status files not retried | IsStale checks IndexStatus for error/partial | b6c901c |
+| server.go: non-string file_path triggers full reindex | Type validation before processing | b6c901c |
+| serve.go: path traversal via ../../ in file_path | filepath.Rel guard added | b6c901c |
+| server_test.go: data race on bytes.Buffer | Replaced busy-wait with channel+timeout | b6c901c |
+| Duplicate skipIfNoAstGrep helper | Extracted to internal/testutil package | b6c901c |
+
 ### Test Count
-- 74 tests across 8 packages, all passing
-- Config: 11, Graph: 11, Hash: 3, Indexer: 19, Query: 9, MCP: 9, CLI: 10, Integration: 2
+- 76 tests across 9 packages, all passing (race detector clean)
+- Config: 11, Graph: 11, Hash: 3, Indexer: 20, Query: 9, MCP: 10, CLI: 10, Integration: 2
 
 ### Notes
 - Edge count is 0 across files because edge targets must exist before edges can be created; edges within same file resolve correctly
