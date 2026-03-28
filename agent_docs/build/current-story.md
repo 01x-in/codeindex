@@ -1,34 +1,23 @@
-# Current Story: M1-S1
+# Current Story: M1-S2
 
 ## Story
-Project scaffold + config system
+`code-index init` with auto-detection
 
 ## Acceptance Criteria
-- [ ] Go module initializes with `go build ./...` succeeding
-- [ ] Cobra CLI wired with `code-index version` printing version string
-- [ ] `.code-index.yaml` schema supports: version, languages[], ignore[], query_primitives[], index_path
-- [ ] Config loads from repo root with validation errors for invalid fields
-- [ ] Config cascade: explicit file > auto-detection > built-in defaults
-- [ ] Missing config file returns sensible defaults (not an error for commands that don't require it)
-- [ ] Unit tests cover: valid config, missing config, invalid config, cascade precedence
-
-## Relevant System Design
-- Package: internal/config/ (config.go, detect.go, schema.go)
-- Package: internal/cli/ (root.go)
-- Config struct: version, languages[], ignore[], query_primitives[], index_path
-- Resolution cascade: explicit .code-index.yaml > auto-detection > defaults
+- [ ] Detects TypeScript from `package.json` + `tsconfig.json`
+- [ ] Detects Go from `go.mod`
+- [ ] Detects Python from `pyproject.toml` or `setup.py`
+- [ ] Detects Rust from `Cargo.toml`
+- [ ] Prints detected config and prompts for confirmation (TTY mode)
+- [ ] `--yes` flag skips confirmation and writes immediately
+- [ ] Writes `.code-index.yaml` to repo root
+- [ ] Adds `.code-index/` to `.gitignore` (creates if missing, appends if exists)
+- [ ] If `.code-index.yaml` already exists, warns and asks to overwrite
+- [ ] If no languages detected, prompts user to select manually or writes empty config with comment
+- [ ] Unit tests cover: each language detection, no-detection case, gitignore handling
 
 ## Current State
-Most of M1-S1 is already done from scaffold:
-- Go module builds
-- Cobra CLI wired with version command
-- Config Load/Save/Validate works
-- DetectLanguages works
-- ValidateSchema works
-- 6 config tests + 3 hash tests + 9 graph tests = 18 total
-
-## Remaining Work
-1. Add config cascade resolution function (LoadOrDetect)
-2. Add missing config returns defaults (not error)
-3. Add cascade precedence test
-4. Add missing config test
+- `config.DetectLanguages()` already works
+- `config.LoadOrDetect()` handles cascade
+- CLI init command is a stub
+- Need: full init implementation + tests
