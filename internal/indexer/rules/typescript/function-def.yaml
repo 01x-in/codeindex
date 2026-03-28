@@ -1,0 +1,4 @@
+id: ts-function-def
+language: TypeScript
+rule:
+  kind: function_declaration

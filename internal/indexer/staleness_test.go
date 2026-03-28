@@ -26,21 +26,19 @@ func setupStoreAndDir(t *testing.T) (*graph.SQLiteStore, string) {
 func TestIsStale_FreshFile(t *testing.T) {
 	store, dir := setupStoreAndDir(t)
 
-	// Create a file and index it.
-	filePath := filepath.Join(dir, "fresh.ts")
-	content := []byte("export function hello(): void {}")
-	require.NoError(t, os.WriteFile(filePath, content, 0644))
+	// Create a file and index it with relative path.
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "fresh.ts"), []byte("export function hello(): void {}"), 0644))
 
-	h := hash.Bytes(content)
+	h := hash.Bytes([]byte("export function hello(): void {}"))
 	require.NoError(t, store.SetFileMetadata(graph.FileMetadata{
-		FilePath:    filePath,
+		FilePath:    "fresh.ts", // relative path
 		ContentHash: h,
 		Language:    "typescript",
 		IndexStatus: "ok",
 	}))
 
 	idx := indexer.NewIndexer(store, nil, dir, "typescript")
-	stale, err := idx.IsStale(filePath)
+	stale, err := idx.IsStale(filepath.Join(dir, "fresh.ts"))
 	require.NoError(t, err)
 	assert.False(t, stale, "file with matching hash should not be stale")
 }
@@ -48,23 +46,22 @@ func TestIsStale_FreshFile(t *testing.T) {
 func TestIsStale_ModifiedFile(t *testing.T) {
 	store, dir := setupStoreAndDir(t)
 
-	filePath := filepath.Join(dir, "modified.ts")
 	originalContent := []byte("export function hello(): void {}")
-	require.NoError(t, os.WriteFile(filePath, originalContent, 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "modified.ts"), originalContent, 0644))
 
 	h := hash.Bytes(originalContent)
 	require.NoError(t, store.SetFileMetadata(graph.FileMetadata{
-		FilePath:    filePath,
+		FilePath:    "modified.ts",
 		ContentHash: h,
 		Language:    "typescript",
 		IndexStatus: "ok",
 	}))
 
 	// Modify the file.
-	require.NoError(t, os.WriteFile(filePath, []byte("export function hello(): string { return 'hi'; }"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "modified.ts"), []byte("export function hello(): string { return 'hi'; }"), 0644))
 
 	idx := indexer.NewIndexer(store, nil, dir, "typescript")
-	stale, err := idx.IsStale(filePath)
+	stale, err := idx.IsStale(filepath.Join(dir, "modified.ts"))
 	require.NoError(t, err)
 	assert.True(t, stale, "file with different hash should be stale")
 }
@@ -72,13 +69,13 @@ func TestIsStale_ModifiedFile(t *testing.T) {
 func TestIsStale_DeletedFile(t *testing.T) {
 	store, dir := setupStoreAndDir(t)
 
-	filePath := filepath.Join(dir, "deleted.ts")
 	content := []byte("export function hello(): void {}")
+	filePath := filepath.Join(dir, "deleted.ts")
 	require.NoError(t, os.WriteFile(filePath, content, 0644))
 
 	h := hash.Bytes(content)
 	require.NoError(t, store.SetFileMetadata(graph.FileMetadata{
-		FilePath:    filePath,
+		FilePath:    "deleted.ts",
 		ContentHash: h,
 		Language:    "typescript",
 		IndexStatus: "ok",
@@ -88,7 +85,7 @@ func TestIsStale_DeletedFile(t *testing.T) {
 	require.NoError(t, os.Remove(filePath))
 
 	idx := indexer.NewIndexer(store, nil, dir, "typescript")
-	stale, err := idx.IsStale(filePath)
+	stale, err := idx.IsStale(filepath.Join(dir, "deleted.ts"))
 	require.NoError(t, err)
 	assert.True(t, stale, "deleted file should be stale")
 }
@@ -97,11 +94,10 @@ func TestIsStale_NewFile(t *testing.T) {
 	store, dir := setupStoreAndDir(t)
 
 	// File exists on disk but not in metadata.
-	filePath := filepath.Join(dir, "new.ts")
-	require.NoError(t, os.WriteFile(filePath, []byte("const x = 1;"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "new.ts"), []byte("const x = 1;"), 0644))
 
 	idx := indexer.NewIndexer(store, nil, dir, "typescript")
-	stale, err := idx.IsStale(filePath)
+	stale, err := idx.IsStale(filepath.Join(dir, "new.ts"))
 	require.NoError(t, err)
 	assert.True(t, stale, "file not in metadata should be stale")
 }
@@ -109,26 +105,25 @@ func TestIsStale_NewFile(t *testing.T) {
 func TestIsStaleFile_Standalone(t *testing.T) {
 	store, dir := setupStoreAndDir(t)
 
-	filePath := filepath.Join(dir, "test.ts")
 	content := []byte("export const x = 42;")
-	require.NoError(t, os.WriteFile(filePath, content, 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "test.ts"), content, 0644))
 
 	h := hash.Bytes(content)
 	require.NoError(t, store.SetFileMetadata(graph.FileMetadata{
-		FilePath:    filePath,
+		FilePath:    "test.ts",
 		ContentHash: h,
 		Language:    "typescript",
 		IndexStatus: "ok",
 	}))
 
 	// Fresh.
-	stale, err := indexer.IsStaleFile(store, dir, filePath)
+	stale, err := indexer.IsStaleFile(store, dir, filepath.Join(dir, "test.ts"))
 	require.NoError(t, err)
 	assert.False(t, stale)
 
 	// Modify.
-	require.NoError(t, os.WriteFile(filePath, []byte("export const x = 99;"), 0644))
-	stale, err = indexer.IsStaleFile(store, dir, filePath)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "test.ts"), []byte("export const x = 99;"), 0644))
+	stale, err = indexer.IsStaleFile(store, dir, filepath.Join(dir, "test.ts"))
 	require.NoError(t, err)
 	assert.True(t, stale)
 }
@@ -144,10 +139,9 @@ func TestGetStaleFiles(t *testing.T) {
 	}
 
 	for name, content := range files {
-		fp := filepath.Join(dir, name)
-		require.NoError(t, os.WriteFile(fp, content, 0644))
+		require.NoError(t, os.WriteFile(filepath.Join(dir, name), content, 0644))
 		require.NoError(t, store.SetFileMetadata(graph.FileMetadata{
-			FilePath:    fp,
+			FilePath:    name, // relative path
 			ContentHash: hash.Bytes(content),
 			Language:    "typescript",
 			IndexStatus: "ok",
@@ -160,5 +154,5 @@ func TestGetStaleFiles(t *testing.T) {
 	staleFiles, err := indexer.GetStaleFiles(store, dir)
 	require.NoError(t, err)
 	assert.Len(t, staleFiles, 1)
-	assert.Contains(t, staleFiles[0], "b.ts")
+	assert.Equal(t, "b.ts", staleFiles[0])
 }
