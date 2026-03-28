@@ -1,23 +1,19 @@
-# Current Story: M1-S2
+# Current Story: M1-S4
 
 ## Story
-`code-index init` with auto-detection
+Content hashing + staleness detection
 
 ## Acceptance Criteria
-- [ ] Detects TypeScript from `package.json` + `tsconfig.json`
-- [ ] Detects Go from `go.mod`
-- [ ] Detects Python from `pyproject.toml` or `setup.py`
-- [ ] Detects Rust from `Cargo.toml`
-- [ ] Prints detected config and prompts for confirmation (TTY mode)
-- [ ] `--yes` flag skips confirmation and writes immediately
-- [ ] Writes `.code-index.yaml` to repo root
-- [ ] Adds `.code-index/` to `.gitignore` (creates if missing, appends if exists)
-- [ ] If `.code-index.yaml` already exists, warns and asks to overwrite
-- [ ] If no languages detected, prompts user to select manually or writes empty config with comment
-- [ ] Unit tests cover: each language detection, no-detection case, gitignore handling
+- [x] SHA-256 content hash computed for each indexed file
+- [x] `file_metadata` stores `content_hash` and `last_indexed_at`
+- [ ] `IsStale(filePath)` reads current file, computes hash, compares to stored hash
+- [ ] Returns `true` if hashes differ or file not in metadata
+- [ ] Returns `false` if hashes match
+- [ ] Handles deleted files (file gone from disk = stale)
+- [ ] Handles new files (not in metadata = stale)
+- [ ] Unit tests cover: fresh file, modified file, deleted file, new file
 
 ## Current State
-- `config.DetectLanguages()` already works
-- `config.LoadOrDetect()` handles cascade
-- CLI init command is a stub
-- Need: full init implementation + tests
+- hash.File() and hash.Bytes() work
+- Indexer.IsStale() exists but needs proper absolute path handling
+- Need staleness tests
