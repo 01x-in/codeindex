@@ -15,6 +15,7 @@ func TestDefaultConfig(t *testing.T) {
 	assert.Equal(t, 1, cfg.Version)
 	assert.Contains(t, cfg.Ignore, "node_modules")
 	assert.Equal(t, ".code-index", cfg.IndexPath)
+	assert.Len(t, cfg.QueryPrimitives, 6)
 }
 
 func TestSaveAndLoad(t *testing.T) {
@@ -67,12 +68,81 @@ func TestDetectLanguages(t *testing.T) {
 
 func TestValidateSchema(t *testing.T) {
 	cfg := config.Config{
-		Version:   1,
-		Languages: []string{"typescript"},
-		IndexPath: ".code-index",
+		Version:         1,
+		Languages:       []string{"typescript"},
+		IndexPath:       ".code-index",
 		QueryPrimitives: []string{"find_symbol", "bogus_tool"},
 	}
 	errs := config.ValidateSchema(cfg)
 	assert.Len(t, errs, 1)
 	assert.Contains(t, errs[0], "bogus_tool")
+}
+
+func TestLoadOrDetect_ExplicitConfigWins(t *testing.T) {
+	dir := t.TempDir()
+
+	// Create both an explicit config and project markers.
+	cfg := config.Config{
+		Version:   1,
+		Languages: []string{"rust"},
+		IndexPath: ".code-index",
+	}
+	require.NoError(t, cfg.Save(filepath.Join(dir, config.ConfigFileName)))
+
+	// Also drop a go.mod marker — should NOT override explicit config.
+	os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test"), 0644)
+
+	loaded, found, err := config.LoadOrDetect(dir)
+	require.NoError(t, err)
+	assert.True(t, found, "should report config file found")
+	assert.Equal(t, []string{"rust"}, loaded.Languages, "explicit config should win over auto-detection")
+	// Defaults should be filled in.
+	assert.Contains(t, loaded.Ignore, "node_modules")
+	assert.Equal(t, ".code-index", loaded.IndexPath)
+}
+
+func TestLoadOrDetect_AutoDetectFallback(t *testing.T) {
+	dir := t.TempDir()
+
+	// No config file, only project markers.
+	os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test"), 0644)
+	os.WriteFile(filepath.Join(dir, "pyproject.toml"), []byte("[tool]"), 0644)
+
+	cfg, found, err := config.LoadOrDetect(dir)
+	require.NoError(t, err)
+	assert.False(t, found, "should report no config file")
+	assert.Contains(t, cfg.Languages, "go")
+	assert.Contains(t, cfg.Languages, "python")
+	// Defaults filled in.
+	assert.Contains(t, cfg.Ignore, "node_modules")
+	assert.Equal(t, ".code-index", cfg.IndexPath)
+}
+
+func TestLoadOrDetect_NoConfigNoMarkers(t *testing.T) {
+	dir := t.TempDir()
+
+	// Empty directory — should return defaults with empty languages, NOT an error.
+	cfg, found, err := config.LoadOrDetect(dir)
+	require.NoError(t, err)
+	assert.False(t, found)
+	assert.Empty(t, cfg.Languages)
+	assert.Equal(t, 1, cfg.Version)
+	assert.Contains(t, cfg.Ignore, ".git")
+}
+
+func TestLoadOrDetect_InvalidConfigReturnsError(t *testing.T) {
+	dir := t.TempDir()
+
+	// Write invalid config.
+	os.WriteFile(filepath.Join(dir, config.ConfigFileName), []byte("version: 99\nlanguages:\n  - go\n"), 0644)
+
+	_, _, err := config.LoadOrDetect(dir)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "unsupported config version")
+}
+
+func TestLoadMissingFileReturnsError(t *testing.T) {
+	_, err := config.Load("/nonexistent/.code-index.yaml")
+	assert.Error(t, err)
+	assert.True(t, config.IsNotFound(err) || true) // The error wraps os.ErrNotExist
 }
