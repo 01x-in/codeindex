@@ -25,4 +25,14 @@ type Store interface {
 
 	// Graph traversal
 	GetNeighborhood(nodeID int64, depth int, edgeKinds []string) ([]Node, []Edge, error)
+
+	// CTE-based traversal (single SQL query, avoids N+1)
+	GetCallersCTE(nodeIDs []int64, maxDepth int) ([]CallerChainEntry, error)
+	GetNeighborhoodCTE(nodeIDs []int64, maxDepth int, edgeKinds []string) ([]Node, []Edge, error)
+}
+
+// CallerChainEntry represents one entry in a caller chain returned by CTE traversal.
+type CallerChainEntry struct {
+	CallerNode Node
+	Depth      int
 }
