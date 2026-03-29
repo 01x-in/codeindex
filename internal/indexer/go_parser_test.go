@@ -68,10 +68,11 @@ func TestParseMatches_GoMethodDef(t *testing.T) {
 }
 
 func TestParseMatches_GoStructDef(t *testing.T) {
+	// With type_spec rule, the match text is the type spec itself (no "type" prefix).
 	matches := []indexer.AstGrepMatch{
 		{
-			Text:   "type User struct {\n\tID    string\n\tName  string\n\tEmail string\n}",
-			Range:  indexer.AstGrepRange{Start: indexer.Position{Line: 4, Column: 0}, End: indexer.Position{Line: 8, Column: 1}},
+			Text:   "User struct {\n\tID    string\n\tName  string\n\tEmail string\n}",
+			Range:  indexer.AstGrepRange{Start: indexer.Position{Line: 4, Column: 5}, End: indexer.Position{Line: 8, Column: 1}},
 			File:   "/repo/pkg/models/user.go",
 			Lines:  "type User struct {\n\tID    string\n\tName  string\n\tEmail string\n}",
 			RuleID: "go-type-decl",
@@ -87,10 +88,11 @@ func TestParseMatches_GoStructDef(t *testing.T) {
 }
 
 func TestParseMatches_GoInterfaceDef(t *testing.T) {
+	// With type_spec rule, the match text is the type spec itself (no "type" prefix).
 	matches := []indexer.AstGrepMatch{
 		{
-			Text:   "type Validatable interface {\n\tValidate() error\n}",
-			Range:  indexer.AstGrepRange{Start: indexer.Position{Line: 18, Column: 0}, End: indexer.Position{Line: 20, Column: 1}},
+			Text:   "Validatable interface {\n\tValidate() error\n}",
+			Range:  indexer.AstGrepRange{Start: indexer.Position{Line: 18, Column: 5}, End: indexer.Position{Line: 20, Column: 1}},
 			File:   "/repo/pkg/models/user.go",
 			Lines:  "type Validatable interface {\n\tValidate() error\n}",
 			RuleID: "go-type-decl",
@@ -193,11 +195,12 @@ func TestParseMatches_GoExportDetection(t *testing.T) {
 }
 
 func TestParseMatches_GoTypeAlias(t *testing.T) {
-	// Type alias (not struct or interface) should get kind "type".
+	// With type_spec rule, text is "ID string" (no "type" prefix).
 	matches := []indexer.AstGrepMatch{
 		{
-			Text:   "type ID string",
-			Range:  indexer.AstGrepRange{Start: indexer.Position{Line: 2, Column: 0}, End: indexer.Position{Line: 2, Column: 14}},
+			Text:   "ID string",
+			Range:  indexer.AstGrepRange{Start: indexer.Position{Line: 2, Column: 5}, End: indexer.Position{Line: 2, Column: 14}},
+			Lines:  "type ID string",
 			RuleID: "go-type-decl",
 		},
 	}
@@ -205,5 +208,69 @@ func TestParseMatches_GoTypeAlias(t *testing.T) {
 	assert.Len(t, result.Nodes, 1)
 	assert.Equal(t, "ID", result.Nodes[0].Name)
 	assert.Equal(t, "type", result.Nodes[0].Kind)
+	assert.True(t, result.Nodes[0].Exported)
+}
+
+func TestParseMatches_GoGroupedTypeDecl(t *testing.T) {
+	// Grouped type declaration: type ( A struct{}; B interface{} )
+	// With type_spec rule, each spec is a separate match.
+	matches := []indexer.AstGrepMatch{
+		{
+			Text:   "Config struct {\n\tHost string\n\tPort int\n}",
+			Range:  indexer.AstGrepRange{Start: indexer.Position{Line: 3, Column: 1}, End: indexer.Position{Line: 6, Column: 1}},
+			Lines:  "\tConfig struct {\n\t\tHost string\n\t\tPort int\n\t}",
+			RuleID: "go-type-decl",
+		},
+		{
+			Text:   "Logger interface {\n\tLog(msg string)\n}",
+			Range:  indexer.AstGrepRange{Start: indexer.Position{Line: 7, Column: 1}, End: indexer.Position{Line: 9, Column: 1}},
+			Lines:  "\tLogger interface {\n\t\tLog(msg string)\n\t}",
+			RuleID: "go-type-decl",
+		},
+	}
+
+	result := indexer.ParseMatches(matches, "types.go", "go")
+
+	assert.Len(t, result.Nodes, 2)
+	assert.Equal(t, "Config", result.Nodes[0].Name)
+	assert.Equal(t, "class", result.Nodes[0].Kind)
+	assert.True(t, result.Nodes[0].Exported)
+	assert.Equal(t, "Logger", result.Nodes[1].Name)
+	assert.Equal(t, "interface", result.Nodes[1].Kind)
+	assert.True(t, result.Nodes[1].Exported)
+}
+
+func TestParseMatches_GoGenericFunction(t *testing.T) {
+	matches := []indexer.AstGrepMatch{
+		{
+			Text:   "func Map[T any, U any](slice []T, fn func(T) U) []U {\n\tresult := make([]U, len(slice))\n\tfor i, v := range slice {\n\t\tresult[i] = fn(v)\n\t}\n\treturn result\n}",
+			Range:  indexer.AstGrepRange{Start: indexer.Position{Line: 10, Column: 0}, End: indexer.Position{Line: 16, Column: 1}},
+			RuleID: "go-function-def",
+		},
+	}
+
+	result := indexer.ParseMatches(matches, "generic.go", "go")
+
+	assert.Len(t, result.Nodes, 1)
+	assert.Equal(t, "Map", result.Nodes[0].Name)
+	assert.Equal(t, "fn", result.Nodes[0].Kind)
+	assert.True(t, result.Nodes[0].Exported)
+}
+
+func TestParseMatches_GoGenericType(t *testing.T) {
+	// With type_spec: "Set[T comparable] struct { items map[T]struct{} }"
+	matches := []indexer.AstGrepMatch{
+		{
+			Text:   "Set[T comparable] struct {\n\titems map[T]struct{}\n}",
+			Range:  indexer.AstGrepRange{Start: indexer.Position{Line: 5, Column: 5}, End: indexer.Position{Line: 7, Column: 1}},
+			RuleID: "go-type-decl",
+		},
+	}
+
+	result := indexer.ParseMatches(matches, "generic.go", "go")
+
+	assert.Len(t, result.Nodes, 1)
+	assert.Equal(t, "Set", result.Nodes[0].Name)
+	assert.Equal(t, "class", result.Nodes[0].Kind)
 	assert.True(t, result.Nodes[0].Exported)
 }

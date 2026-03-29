@@ -38,15 +38,16 @@ var (
 	exportTypeRe    = regexp.MustCompile(`export\s+type\s+(\w+)`)
 
 	// Go-specific patterns.
-	goFuncNameRe   = regexp.MustCompile(`func\s+(\w+)\s*\(`)
-	goMethodNameRe = regexp.MustCompile(`func\s+\([^)]+\)\s+(\w+)\s*\(`)
-	goTypeNameRe   = regexp.MustCompile(`type\s+(\w+)\s+`)
+	// Support generic declarations: func Map[T any](...), type Set[T comparable] struct{}
+	goFuncNameRe   = regexp.MustCompile(`func\s+(\w+)\s*(?:\[|[\(])`)
+	goMethodNameRe = regexp.MustCompile(`func\s+\([^)]+\)\s+(\w+)\s*(?:\[|[\(])`)
+	goTypeNameRe   = regexp.MustCompile(`(\w+)\s*(?:\[.*?\]\s+)?`)
 	goImportPathRe = regexp.MustCompile(`"([^"]+)"`)
-	goCallNameRe   = regexp.MustCompile(`^(\w+(?:\.\w+)*)\s*\(`)
+	goCallNameRe   = regexp.MustCompile(`^(\w+(?:\.\w+)*)\s*(?:\[.*?\])?\s*\(`)
 
-	// Go type discriminator patterns.
-	goStructRe    = regexp.MustCompile(`type\s+\w+\s+struct\s*\{`)
-	goInterfaceRe = regexp.MustCompile(`type\s+\w+\s+interface\s*\{`)
+	// Go type discriminator patterns (support generics with type params).
+	goStructRe    = regexp.MustCompile(`\bstruct\s*\{`)
+	goInterfaceRe = regexp.MustCompile(`\binterface\s*\{`)
 )
 
 // nodeRuleIDs are the rule IDs that produce nodes (symbol definitions).
@@ -121,11 +122,10 @@ func ParseMatches(matches []AstGrepMatch, filePath string, language string) Pars
 			}
 
 		case "go-type-decl":
-			// Unified handler for all Go type declarations.
+			// Handles type_spec nodes: individual type specs within grouped or standalone declarations.
 			// Differentiates struct vs interface based on text content.
-			if node := parseGoTypeDecl(m, filePath, language); node != nil {
-				result.Nodes = append(result.Nodes, *node)
-			}
+			nodes := parseGoTypeDecl(m, filePath, language)
+			result.Nodes = append(result.Nodes, nodes...)
 
 		case "go-import":
 			edges := parseGoImport(m, filePath)
@@ -403,35 +403,46 @@ func parseGoMethodDef(m AstGrepMatch, filePath string, language string) *graph.N
 	}
 }
 
-// parseGoTypeDecl handles all Go type declarations (struct, interface, type alias).
-// Uses the unified go-type-decl rule and differentiates based on text content.
-func parseGoTypeDecl(m AstGrepMatch, filePath string, language string) *graph.Node {
-	match := goTypeNameRe.FindStringSubmatch(m.Text)
-	if match == nil {
+// parseGoTypeDecl handles Go type_spec nodes. With the type_spec rule, each type in
+// a grouped `type ( ... )` block is matched individually.
+func parseGoTypeDecl(m AstGrepMatch, filePath string, language string) []graph.Node {
+	// type_spec text looks like: "Name struct { ... }" or "Name[T any] interface { ... }" or "Name = int"
+	// Extract the name (first word).
+	text := strings.TrimSpace(m.Text)
+	if text == "" {
 		return nil
 	}
 
-	name := match[1]
+	// Extract name: first contiguous word characters.
+	nameRe := regexp.MustCompile(`^(\w+)`)
+	nameMatch := nameRe.FindStringSubmatch(text)
+	if nameMatch == nil {
+		return nil
+	}
+
+	name := nameMatch[1]
 	exported := isGoExported(name)
 
 	// Determine the kind from text content.
 	kind := "type" // default for type aliases
-	if goStructRe.MatchString(m.Text) {
+	if goStructRe.MatchString(text) {
 		kind = "class" // struct -> class in the generic kind system
-	} else if goInterfaceRe.MatchString(m.Text) {
+	} else if goInterfaceRe.MatchString(text) {
 		kind = "interface"
 	}
 
-	return &graph.Node{
-		Name:      name,
-		Kind:      kind,
-		FilePath:  filePath,
-		LineStart: m.Range.Start.Line + 1,
-		LineEnd:   m.Range.End.Line + 1,
-		ColStart:  m.Range.Start.Column,
-		ColEnd:    m.Range.End.Column,
-		Exported:  exported,
-		Language:  language,
+	return []graph.Node{
+		{
+			Name:      name,
+			Kind:      kind,
+			FilePath:  filePath,
+			LineStart: m.Range.Start.Line + 1,
+			LineEnd:   m.Range.End.Line + 1,
+			ColStart:  m.Range.Start.Column,
+			ColEnd:    m.Range.End.Column,
+			Exported:  exported,
+			Language:  language,
+		},
 	}
 }
 
@@ -538,10 +549,31 @@ func extractGoFunctionSignature(text string) string {
 		}
 	}
 
-	// Skip the function name.
+	// Skip the function name (and optional type params).
 	nameEnd := strings.Index(rest, "(")
 	if nameEnd < 0 {
 		return ""
+	}
+	// Check for type params before the paren.
+	bracketIdx := strings.Index(rest[:nameEnd], "[")
+	if bracketIdx >= 0 {
+		// Skip past the type params to find the actual param list.
+		depth := 0
+		for i := bracketIdx; i < len(rest); i++ {
+			if rest[i] == '[' {
+				depth++
+			} else if rest[i] == ']' {
+				depth--
+				if depth == 0 {
+					rest = rest[i+1:]
+					break
+				}
+			}
+		}
+		nameEnd = strings.Index(rest, "(")
+		if nameEnd < 0 {
+			return ""
+		}
 	}
 	rest = rest[nameEnd:]
 
@@ -557,7 +589,7 @@ func extractGoFunctionSignature(text string) string {
 
 // extractGoReceiver extracts the receiver type name from a method declaration.
 func extractGoReceiver(text string) string {
-	re := regexp.MustCompile(`func\s+\(\s*\w+\s+\*?(\w+)\s*\)`)
+	re := regexp.MustCompile(`func\s+\(\s*\w+\s+\*?(\w+)`)
 	match := re.FindStringSubmatch(text)
 	if match == nil {
 		return ""
