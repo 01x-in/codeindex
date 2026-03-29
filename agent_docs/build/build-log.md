@@ -79,6 +79,7 @@
 - Date: 2026-03-29
 - Branch: milestone/4
 - Status: COMPLETE
+- PR: #5 (open, review fixes applied)
 
 ### Stories Completed
 | ID | Description | Commit |
@@ -89,14 +90,22 @@
 | M4-S4 | Recursive CTE traversal and performance optimization | 768de7a |
 | M4-S5 | Go language support with ast-grep rules and fixture project | 4009555 |
 
+### PR Review Fixes
+| Issue | Fix | Commit |
+|-------|-----|--------|
+| Duplicate case/method definitions in server.go (compile error) | Removed duplicate tool defs, switch cases, methods | 1e1e354 |
+| type_declaration matches whole grouped block, not individual types | Changed rule to type_spec for per-type matching | 61047a8 |
+| Generic Go declarations (func Map[T]..., type Set[T]...) not parsed | Updated regexes to handle type parameters | 61047a8 |
+
 ### Test Count
 - All tests passing, race detector clean
-- New Go parser tests: 11 (function, method, struct, interface, import, call, builtin filter, export detection, type alias)
-- New Go integration tests: 4 (mock runner, single file, index all, method scope)
+- Go parser tests: 14 (function, method, struct, interface, import, call, builtin filter, export detection, type alias, grouped types, generic function, generic type)
+- Go integration tests: 4 (mock runner, single file, index all, method scope)
 - MCP tests: 16 (including get_callers and get_subgraph handlers)
 
 ### Notes
-- Go ast-grep rules use unified go-type-decl for all type declarations (struct/interface/alias differentiated in parser via text)
+- Go ast-grep rules use type_spec (not type_declaration) for individual type matching in grouped blocks
 - Go export detection via unicode.IsUpper on first character (Go convention)
 - Method receiver type stored as scope field for graph traversal
 - CTE-based traversal for get_callers and get_subgraph avoids N+1 queries
+- Generic Go support: regexes handle type params in func/type declarations
