@@ -10,9 +10,9 @@ import (
 )
 
 // ConfigFileName is the default config file name.
-const ConfigFileName = ".code-index.yaml"
+const ConfigFileName = ".codeindex.yaml"
 
-// Config represents the .code-index.yaml configuration.
+// Config represents the .codeindex.yaml configuration.
 type Config struct {
 	Version         int      `yaml:"version" json:"version"`
 	Languages       []string `yaml:"languages" json:"languages"`
@@ -35,11 +35,11 @@ func DefaultConfig() Config {
 			"get_subgraph",
 			"reindex",
 		},
-		IndexPath: ".code-index",
+		IndexPath: ".codeindex",
 	}
 }
 
-// Load reads and parses a .code-index.yaml file.
+// Load reads and parses a .codeindex.yaml file.
 func Load(path string) (Config, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -59,7 +59,7 @@ func Load(path string) (Config, error) {
 }
 
 // LoadOrDetect resolves the config using the cascade:
-// 1. Explicit .code-index.yaml in dir (wins if present)
+// 1. Explicit .codeindex.yaml in dir (wins if present)
 // 2. Auto-detection from project markers fills language gaps
 // 3. Built-in defaults for everything else
 //

@@ -1,11 +1,11 @@
 .PHONY: build test lint typecheck dev clean
 
-BINARY=code-index
+BINARY=codeindex
 VERSION?=dev
 LDFLAGS=-ldflags "-s -w -X github.com/01x/codeindex/internal/cli.Version=$(VERSION)"
 
 build:
-	go build $(LDFLAGS) -o bin/$(BINARY) ./cmd/code-index
+	go build $(LDFLAGS) -o bin/$(BINARY) ./cmd/codeindex
 
 test:
 	go test ./... -v
@@ -24,7 +24,7 @@ dev: build
 
 clean:
 	rm -rf bin/
-	rm -rf .code-index/
+	rm -rf .codeindex/
 
 install:
-	go install $(LDFLAGS) ./cmd/code-index
+	go install $(LDFLAGS) ./cmd/codeindex

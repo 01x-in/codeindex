@@ -92,7 +92,7 @@ func (s *Server) handleInitialize(req JSONRPCRequest) JSONRPCResponse {
 				"tools": map[string]interface{}{},
 			},
 			"serverInfo": map[string]interface{}{
-				"name":    "code-index",
+				"name":    "codeindex",
 				"version": "0.1.0",
 			},
 		},
