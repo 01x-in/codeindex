@@ -11,18 +11,18 @@
 - Date: 2026-03-28
 - Branch: milestone/1
 - Status: COMPLETE
-- PR: #2 (open, review fixes pushed)
+- PR: #2 (merged)
 
 ### Stories Completed
 | ID | Description | Commit |
 |----|-------------|--------|
 | M1-S1 | Project scaffold + config system (cascade resolution, LoadOrDetect) | 74ba906 |
-| M1-S2 | `code-index init` with auto-detection, --yes flag, .gitignore handling | 3524d98 |
+| M1-S2 | `codeindex init` with auto-detection, --yes flag, .gitignore handling | 3524d98 |
 | M1-S3 | SQLite graph store + schema (UNIQUE constraints, upsert, index metadata) | 7e06b7d |
 | M1-S4 | Content hashing + staleness detection (IsStale, IsStaleFile, GetStaleFiles) | b9981ea |
 | M1-S5 | ast-grep integration + TypeScript indexer (inline rules, regex name extraction) | d9867f0 |
-| M1-S6 | `code-index reindex` (full incremental + single file) | 58db8c5 |
-| M1-S7 | `code-index status` command (health summary, JSON output) | 201df37 |
+| M1-S6 | `codeindex reindex` (full incremental + single file) | 58db8c5 |
+| M1-S7 | `codeindex status` command (health summary, JSON output) | 201df37 |
 | M1-S8 | MCP stdio server + tool handlers (JSON-RPC 2.0, RFC 7807 errors) | 2fe3e78 |
 | M1-S9 | Query engine: get_file_structure, find_symbol, get_references | 2fe3e78 |
 | M1-S10 | End-to-end integration tests (full workflow + MCP protocol compliance) | b068dcc |
@@ -45,3 +45,58 @@
 - Edge count is 0 across files because edge targets must exist before edges can be created; edges within same file resolve correctly
 - ast-grep invoked via --inline-rules with --- separators for multi-rule single invocation
 - Symbol name extraction uses regex on match text field (not meta-variables)
+
+## Milestone 2: CLI Tree Explorer
+- Date: 2026-03-28
+- Branch: milestone/2
+- Status: COMPLETE
+- PR: #3 (merged)
+
+## Milestone 3: Agent Skills Distribution
+- Date: 2026-03-28
+- Branch: milestone/3
+- Status: COMPLETE
+
+### Stories Completed
+| ID | Description | Commit |
+|----|-------------|--------|
+| M3-S1 | Claude Code skill file (CLAUDE.md) with MCP tool usage instructions | 5ca2e07 |
+| M3-S2 | Cursor skill file (.cursorrules) with MCP tool instructions | d065cf5 |
+| M3-S3 | Codex skill file (AGENTS.md) with MCP tool instructions | 81e1d0a |
+| M3-S4 | skills.sh repo structure (skills.json, README.md) | f2ea69c |
+| M3-S5 | Skill installation validation tests (JSON validity, consistency, prereqs) | f5215f5 |
+
+### Test Count
+- 32 skill-specific tests, all passing
+- Tests cover: file existence, MCP tool mentions, workflow instructions, stale flag explanation, binary name correctness, skills.json validity, cross-skill consistency, prerequisite checks
+
+### Notes
+- skills.sh external repo publishing requires human action (create GitHub repo, register with skills.sh)
+- All skill files use `codeindex` (no hyphen) consistently
+- skills.json follows skills.sh conventions with prerequisite checks for both codeindex and ast-grep
+
+## Milestone 4: Graph Traversal Queries
+- Date: 2026-03-29
+- Branch: milestone/4
+- Status: COMPLETE
+
+### Stories Completed
+| ID | Description | Commit |
+|----|-------------|--------|
+| M4-S1 | get_callers with BFS traversal and cycle detection | c46d723 |
+| M4-S2 | get_subgraph with BFS neighborhood traversal | 837a6ec |
+| M4-S3 | MCP tool registration for get_callers and get_subgraph | edf5c0e |
+| M4-S4 | Recursive CTE traversal and performance optimization | 768de7a |
+| M4-S5 | Go language support with ast-grep rules and fixture project | 4009555 |
+
+### Test Count
+- All tests passing, race detector clean
+- New Go parser tests: 11 (function, method, struct, interface, import, call, builtin filter, export detection, type alias)
+- New Go integration tests: 4 (mock runner, single file, index all, method scope)
+- MCP tests: 16 (including get_callers and get_subgraph handlers)
+
+### Notes
+- Go ast-grep rules use unified go-type-decl for all type declarations (struct/interface/alias differentiated in parser via text)
+- Go export detection via unicode.IsUpper on first character (Go convention)
+- Method receiver type stored as scope field for graph traversal
+- CTE-based traversal for get_callers and get_subgraph avoids N+1 queries
