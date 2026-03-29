@@ -15,19 +15,19 @@ Any MCP-compatible AI coding agent (Claude Code, Cursor, Codex, Gemini, OpenCode
 ## M1: Core Index + Query Foundation
 
 ### M1-S1: Project scaffold + config system
-**As a** Dev, **I want** `code-index` to load and validate a `.code-index.yaml` config file with a clear schema, **so that** I can control what gets indexed and how.
+**As a** Dev, **I want** `codeindex` to load and validate a `.codeindex.yaml` config file with a clear schema, **so that** I can control what gets indexed and how.
 
 **Acceptance Criteria:**
 - [ ] Go module initializes with `go build ./...` succeeding
-- [ ] Cobra CLI wired with `code-index version` printing version string
-- [ ] `.code-index.yaml` schema supports: version, languages[], ignore[], query_primitives[], index_path
+- [ ] Cobra CLI wired with `codeindex version` printing version string
+- [ ] `.codeindex.yaml` schema supports: version, languages[], ignore[], query_primitives[], index_path
 - [ ] Config loads from repo root with validation errors for invalid fields
 - [ ] Config cascade: explicit file > auto-detection > built-in defaults
 - [ ] Missing config file returns sensible defaults (not an error for commands that don't require it)
 - [ ] Unit tests cover: valid config, missing config, invalid config, cascade precedence
 
-### M1-S2: `code-index init` with auto-detection
-**As a** Dev, **I want** to run `code-index init` in any repo and get a working config, **so that** I don't have to manually write YAML to get started.
+### M1-S2: `codeindex init` with auto-detection
+**As a** Dev, **I want** to run `codeindex init` in any repo and get a working config, **so that** I don't have to manually write YAML to get started.
 
 **Acceptance Criteria:**
 - [ ] Detects TypeScript from `package.json` + `tsconfig.json`
@@ -36,9 +36,9 @@ Any MCP-compatible AI coding agent (Claude Code, Cursor, Codex, Gemini, OpenCode
 - [ ] Detects Rust from `Cargo.toml`
 - [ ] Prints detected config and prompts for confirmation (TTY mode)
 - [ ] `--yes` flag skips confirmation and writes immediately
-- [ ] Writes `.code-index.yaml` to repo root
-- [ ] Adds `.code-index/` to `.gitignore` (creates `.gitignore` if missing, appends if exists)
-- [ ] If `.code-index.yaml` already exists, warns and asks to overwrite
+- [ ] Writes `.codeindex.yaml` to repo root
+- [ ] Adds `.codeindex/` to `.gitignore` (creates `.gitignore` if missing, appends if exists)
+- [ ] If `.codeindex.yaml` already exists, warns and asks to overwrite
 - [ ] If no languages detected, prompts user to select manually or writes empty config with comment
 - [ ] Unit tests cover: each language detection, no-detection case, gitignore handling
 
@@ -71,7 +71,7 @@ Any MCP-compatible AI coding agent (Claude Code, Cursor, Codex, Gemini, OpenCode
 - [ ] Unit tests cover: fresh file, modified file, deleted file, new file
 
 ### M1-S5: ast-grep integration + TypeScript indexer
-**As a** Dev, **I want** `code-index` to parse my TypeScript codebase using ast-grep and extract symbols and relationships, **so that** the knowledge graph accurately reflects my code structure.
+**As a** Dev, **I want** `codeindex` to parse my TypeScript codebase using ast-grep and extract symbols and relationships, **so that** the knowledge graph accurately reflects my code structure.
 
 **Acceptance Criteria:**
 - [ ] ast-grep invoked as subprocess: `ast-grep scan --rule <rule> --json <path>`
@@ -84,13 +84,13 @@ Any MCP-compatible AI coding agent (Claude Code, Cursor, Codex, Gemini, OpenCode
 - [ ] Unit tests with canned ast-grep JSON output (no subprocess dependency)
 - [ ] Integration test with real ast-grep on fixture repo
 
-### M1-S6: `code-index reindex` (full + single file)
+### M1-S6: `codeindex reindex` (full + single file)
 **As a** Dev, **I want** to reindex my entire repo or a single file, **so that** the knowledge graph stays current after edits.
 
 **Acceptance Criteria:**
-- [ ] `code-index reindex` (no args) re-indexes all files matching configured languages
+- [ ] `codeindex reindex` (no args) re-indexes all files matching configured languages
 - [ ] Only stale files are re-parsed (incremental via content hash comparison)
-- [ ] `code-index reindex <filepath>` re-indexes a single file
+- [ ] `codeindex reindex <filepath>` re-indexes a single file
 - [ ] Single file reindex completes in < 100ms on fixture repo
 - [ ] Reindex updates: nodes, edges, file_metadata (hash, timestamp, counts)
 - [ ] Deleted files: if a previously indexed file no longer exists, its nodes/edges are removed
@@ -100,7 +100,7 @@ Any MCP-compatible AI coding agent (Claude Code, Cursor, Codex, Gemini, OpenCode
 - [ ] Exit code 0 on success, non-zero on failure
 - [ ] Tests cover: incremental reindex, single file, deleted file, new file
 
-### M1-S7: `code-index status` command
+### M1-S7: `codeindex status` command
 **As a** Dev, **I want** to check the health of my index at a glance, **so that** I know if I need to reindex before querying.
 
 **Acceptance Criteria:**
@@ -109,14 +109,14 @@ Any MCP-compatible AI coding agent (Claude Code, Cursor, Codex, Gemini, OpenCode
 - [ ] Prints: list of stale files (up to 20, with "and N more" if > 20)
 - [ ] Prints: total nodes and edges in graph
 - [ ] `--json` flag outputs all data as JSON
-- [ ] If no index exists, prints "No index found. Run 'code-index init' to get started."
+- [ ] If no index exists, prints "No index found. Run 'codeindex init' to get started."
 - [ ] Tests cover: healthy index, stale index, no index
 
 ### M1-S8: MCP stdio server + tool handlers
 **As an** Agent, **I want** to connect to Code Index via MCP over stdio, **so that** I can query the knowledge graph programmatically.
 
 **Acceptance Criteria:**
-- [ ] `code-index serve` starts a JSON-RPC 2.0 server reading from stdin, writing to stdout
+- [ ] `codeindex serve` starts a JSON-RPC 2.0 server reading from stdin, writing to stdout
 - [ ] Implements MCP protocol: `initialize`, `tools/list`, `tools/call`
 - [ ] Tools registered: `get_file_structure`, `find_symbol`, `get_references`, `reindex`
 - [ ] Each tool validates parameters and returns structured results
@@ -163,7 +163,7 @@ Any MCP-compatible AI coding agent (Claude Code, Cursor, Codex, Gemini, OpenCode
 - [ ] `q` quits the app cleanly
 - [ ] App handles terminal resize gracefully
 
-### M2-S2: `code-index tree <symbol>` — symbol-rooted tree
+### M2-S2: `codeindex tree <symbol>` — symbol-rooted tree
 **As a** Dev, **I want** to see a navigable tree rooted at any symbol, **so that** I can understand its connections without reading files.
 
 **Acceptance Criteria:**
@@ -175,7 +175,7 @@ Any MCP-compatible AI coding agent (Claude Code, Cursor, Codex, Gemini, OpenCode
 - [ ] Max initial depth = 2 (lazy-load deeper on expand)
 - [ ] Error if symbol not found: "Symbol 'X' not found in index"
 
-### M2-S3: `code-index tree --file <path>` — file structure tree
+### M2-S3: `codeindex tree --file <path>` — file structure tree
 **As a** Dev, **I want** to see the structural outline of a file as a tree, **so that** I can quickly orient in unfamiliar files.
 
 **Acceptance Criteria:**
@@ -183,7 +183,7 @@ Any MCP-compatible AI coding agent (Claude Code, Cursor, Codex, Gemini, OpenCode
 - [ ] Grouped by kind: functions, classes, types, interfaces, variables
 - [ ] Each node shows: kind, name, line number, exported indicator
 - [ ] Expandable to show relationships (callers, references) per symbol
-- [ ] Error if file not indexed: "File 'X' not indexed. Run 'code-index reindex X' first."
+- [ ] Error if file not indexed: "File 'X' not indexed. Run 'codeindex reindex X' first."
 
 ### M2-S4: Stale node visual indicators
 **As a** Dev, **I want** stale nodes visually marked in the tree, **so that** I know which data might be outdated.
@@ -219,7 +219,7 @@ Any MCP-compatible AI coding agent (Claude Code, Cursor, Codex, Gemini, OpenCode
 **As a** Dev, **I want** to pipe tree output as JSON, **so that** I can feed structural data into scripts and other tools.
 
 **Acceptance Criteria:**
-- [ ] `code-index tree <symbol> --json` outputs JSON to stdout and exits (no TUI)
+- [ ] `codeindex tree <symbol> --json` outputs JSON to stdout and exits (no TUI)
 - [ ] JSON structure: `{ root: { name, kind, file, line, stale, children: [...] } }`
 - [ ] Children are fully expanded to configured depth (default 3)
 - [ ] `--json` + `--file` works for file structure trees
@@ -264,14 +264,14 @@ Any MCP-compatible AI coding agent (Claude Code, Cursor, Codex, Gemini, OpenCode
 - [ ] GitHub repo created with all skill files
 - [ ] Repo structure follows skills.sh conventions
 - [ ] Published to skills.sh registry
-- [ ] `npx skills add code-index/skills` installs correct skill for detected agent
+- [ ] `npx skills add codeindex/skills` installs correct skill for detected agent
 
 ### M3-S5: Skill installation validation
 **As a** Dev, **I want** skill installation to detect missing prerequisites, **so that** I get a working setup.
 
 **Acceptance Criteria:**
-- [ ] If code-index CLI not in PATH, skill prints: "code-index CLI not found. Install: [instructions]"
-- [ ] If index not initialized, skill guides: "Run 'code-index init' in your repo first"
+- [ ] If codeindex CLI not in PATH, skill prints: "codeindex CLI not found. Install: [instructions]"
+- [ ] If index not initialized, skill guides: "Run 'codeindex init' in your repo first"
 - [ ] Integration test validates install + detection flow
 
 ---
@@ -337,7 +337,7 @@ Any MCP-compatible AI coding agent (Claude Code, Cursor, Codex, Gemini, OpenCode
 **As a** Dev, **I want** the index to auto-update when I save files, **so that** it stays fresh without manual reindex commands.
 
 **Acceptance Criteria:**
-- [ ] `code-index reindex --watch` starts a file watcher
+- [ ] `codeindex reindex --watch` starts a file watcher
 - [ ] Watches all files matching configured languages
 - [ ] Debounces rapid saves (100ms window)
 - [ ] Ignores configured ignore paths (node_modules, vendor, etc.)
@@ -365,20 +365,20 @@ Any MCP-compatible AI coding agent (Claude Code, Cursor, Codex, Gemini, OpenCode
 - [ ] End-to-end test on fixture
 
 ### M5-S4: Distribution: go install + brew tap
-**As a** Dev, **I want** to install code-index easily via standard Go and Homebrew channels.
+**As a** Dev, **I want** to install codeindex easily via standard Go and Homebrew channels.
 
 **Acceptance Criteria:**
-- [ ] `go install github.com/01x/codeindex/cmd/code-index@latest` works
+- [ ] `go install github.com/01x/codeindex/cmd/codeindex@latest` works
 - [ ] Homebrew tap formula created and tested
 - [ ] Installation docs in README
 - [ ] Version flag (`--version`) shows correct version from build tags
 
 ### M5-S5: Distribution: npx thin wrapper
-**As a** Dev, **I want** to run code-index via npx without installing Go.
+**As a** Dev, **I want** to run codeindex via npx without installing Go.
 
 **Acceptance Criteria:**
 - [ ] npm package published
-- [ ] `npx code-index` downloads correct binary for platform (darwin-arm64, darwin-amd64, linux-amd64, linux-arm64)
+- [ ] `npx codeindex` downloads correct binary for platform (darwin-arm64, darwin-amd64, linux-amd64, linux-arm64)
 - [ ] Binary cached after first download
 - [ ] All CLI commands work through npx wrapper
 
@@ -387,9 +387,9 @@ Any MCP-compatible AI coding agent (Claude Code, Cursor, Codex, Gemini, OpenCode
 
 **Acceptance Criteria:**
 - [ ] ast-grep not found: "ast-grep not found in PATH. Install: https://ast-grep.github.io/guide/quick-start.html"
-- [ ] No config: "No .code-index.yaml found. Run 'code-index init' to create one."
-- [ ] Broken config: "Invalid .code-index.yaml at line N: [specific error]"
-- [ ] No index: "No index found at .code-index/. Run 'code-index reindex' to build the index."
+- [ ] No config: "No .codeindex.yaml found. Run 'codeindex init' to create one."
+- [ ] Broken config: "Invalid .codeindex.yaml at line N: [specific error]"
+- [ ] No index: "No index found at .codeindex/. Run 'codeindex reindex' to build the index."
 - [ ] All commands have `--help` with cobra-style usage
 - [ ] Tests validate error message content for each error case
 

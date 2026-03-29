@@ -18,26 +18,26 @@ Code Index lets any AI coding agent and any developer query a persistent structu
 
 ## Key Features
 
-- User can run `code-index init` in any repo and get an immediate structural index — auto-detects languages from project markers (package.json, go.mod, pyproject.toml, Cargo.toml), proposes detected config, and writes `.code-index.yaml` on confirmation
-- User can configure which languages to index, which query primitives to enable, and which directories to ignore via `.code-index.yaml` in the repo root
-- Config resolution follows a cascade: explicit `.code-index.yaml` wins → auto-detection fills gaps → interactive `init` generates the config file for future runs
+- User can run `codeindex init` in any repo and get an immediate structural index — auto-detects languages from project markers (package.json, go.mod, pyproject.toml, Cargo.toml), proposes detected config, and writes `.codeindex.yaml` on confirmation
+- User can configure which languages to index, which query primitives to enable, and which directories to ignore via `.codeindex.yaml` in the repo root
+- Config resolution follows a cascade: explicit `.codeindex.yaml` wins → auto-detection fills gaps → interactive `init` generates the config file for future runs
 - Indexing is powered by ast-grep under the hood — leverages its tree-sitter parsing, pattern matching, and YAML rule engine rather than reimplementing a parser layer from scratch
 - The index is stored as a knowledge graph in SQLite — nodes are symbols (functions, classes, types, interfaces, variables, exports), edges are relationships (calls, imports, implements, extends, references). This is not a flat symbol table; it's a queryable graph with directionality and scope
 - Every indexed file has a `last_indexed_at` timestamp and a content hash stored in the graph metadata. Any query response includes a `stale: true/false` flag per file by comparing the stored hash against the current file on disk. The agent and the developer always know whether they're looking at fresh or outdated structural data
-- User can run `code-index status` to see a summary of index health — total files indexed, how many are stale, when the last full reindex happened, and which files changed since the last index
-- User can run `code-index reindex` to re-index the entire repo (incremental — only stale files are re-parsed based on content hash comparison)
-- User can run `code-index reindex <filepath>` to re-index a single file after an edit — sub-100ms, updates only the graph nodes/edges for that file
-- User can run `code-index reindex --watch` to start a watcher that auto-reindexes on file save (via fsnotify) — runs in a terminal tab or background process for hands-free freshness
+- User can run `codeindex status` to see a summary of index health — total files indexed, how many are stale, when the last full reindex happened, and which files changed since the last index
+- User can run `codeindex reindex` to re-index the entire repo (incremental — only stale files are re-parsed based on content hash comparison)
+- User can run `codeindex reindex <filepath>` to re-index a single file after an edit — sub-100ms, updates only the graph nodes/edges for that file
+- User can run `codeindex reindex --watch` to start a watcher that auto-reindexes on file save (via fsnotify) — runs in a terminal tab or background process for hands-free freshness
 - AI agent can call `get_file_structure` to receive a structural skeleton of any file (exports, functions, classes, types, interfaces) without seeing source code — response includes `stale` flag so the agent knows if it should reindex first
 - AI agent can call `find_symbol` to locate where any function, type, variable, or class is defined across the codebase
 - AI agent can call `get_references` to find every file and line that uses a given symbol — enabling blast radius assessment before edits
 - AI agent can call `get_callers` to trace the call graph upstream from any function
 - AI agent can call `get_subgraph` to retrieve a bounded neighborhood of the knowledge graph around any symbol — "show me everything within 2 hops of this function" — returning a compact structural context that replaces reading 5-10 files
 - AI agent can call `reindex` as an MCP tool action to trigger re-indexing of a specific file or the full repo — the agent skill instructs the agent to call this after any edit
-- The MCP tool is exposed over stdio for local integration with any agent — `code-index serve` starts the MCP server
-- User can run `code-index tree <symbol>` in the terminal to see an interactive tree view rooted at any symbol — expanding callers, callees, importers, and type relationships. Navigable with arrow keys, expandable/collapsible branches, with the option to press Enter to view the source context of any node. Stale nodes are visually marked
-- User can run `code-index tree --file <path>` to see the structural outline of a file as a navigable tree — similar to an IDE's symbol outline but in the terminal
-- User can pipe tree output to JSON (`code-index tree <symbol> --json`) for scripting or feeding into other tools
+- The MCP tool is exposed over stdio for local integration with any agent — `codeindex serve` starts the MCP server
+- User can run `codeindex tree <symbol>` in the terminal to see an interactive tree view rooted at any symbol — expanding callers, callees, importers, and type relationships. Navigable with arrow keys, expandable/collapsible branches, with the option to press Enter to view the source context of any node. Stale nodes are visually marked
+- User can run `codeindex tree --file <path>` to see the structural outline of a file as a navigable tree — similar to an IDE's symbol outline but in the terminal
+- User can pipe tree output to JSON (`codeindex tree <symbol> --json`) for scripting or feeding into other tools
 
 ## Tech Preferences
 
@@ -48,14 +48,14 @@ Code Index lets any AI coding agent and any developer query a persistent structu
 - MCP stdio transport for agent integration (agent-agnostic — any agent that supports MCP can use it)
 - TUI tree view via `charmbracelet/bubbletea` (Go TUI framework) for the interactive CLI explorer
 - Distribution of the CLI: `brew install`, `go install`, and `npx` (thin wrapper that downloads the Go binary)
-- Distribution of agent skills: published to skills.sh (https://skills.sh) — one GitHub repo (`code-index/skills`) containing skill files for each supported agent, installable via `npx skills add code-index/skills`
-- Config format: YAML (`.code-index.yaml`)
+- Distribution of agent skills: published to skills.sh (https://skills.sh) — one GitHub repo (`codeindex/skills`) containing skill files for each supported agent, installable via `npx skills add codeindex/skills`
+- Config format: YAML (`.codeindex.yaml`)
 
 ## Constraints
 
 - Must ship as a single static binary — no runtime dependencies, no daemon process required for basic usage
-- ast-grep must be installed separately as a prerequisite (documented clearly in setup) — code-index orchestrates it, does not bundle it
-- Index must be stored locally in the repo (`.code-index/` directory) — no cloud, no external services
+- ast-grep must be installed separately as a prerequisite (documented clearly in setup) — codeindex orchestrates it, does not bundle it
+- Index must be stored locally in the repo (`.codeindex/` directory) — no cloud, no external services
 - Re-indexing a single file must complete in under 100ms to avoid blocking the agent loop
 - Must handle partially broken / mid-edit code gracefully — ast-grep's tree-sitter error recovery handles this, fall back to last good graph state for the file. The `stale` flag reflects that the file changed but the graph couldn't be updated cleanly
 - Query responses to the MCP tool must be compact enough to be useful in an LLM context window — return structural facts, graph neighborhoods, and staleness flags, not raw AST nodes
@@ -72,8 +72,8 @@ Code Index lets any AI coding agent and any developer query a persistent structu
 - No cloud sync, no telemetry, no accounts
 - No web UI in MVP — CLI tree view only; a browser-based graph explorer is a potential post-MVP upgrade
 - No support for non-code files (markdown, JSON, YAML) in MVP — focus on programming language grammars
-- Not replacing ast-grep — code-index is a persistence and query layer on top of ast-grep, not a competitor
-- No custom edit primitives — code-index does not intercept or replace any agent's native edit mechanism. Freshness is maintained via explicit `reindex` commands, not edit hooks
+- Not replacing ast-grep — codeindex is a persistence and query layer on top of ast-grep, not a competitor
+- No custom edit primitives — codeindex does not intercept or replace any agent's native edit mechanism. Freshness is maintained via explicit `reindex` commands, not edit hooks
 - No building a custom skill distribution system — skills.sh handles multi-agent skill delivery
 
 ## Additional Context
@@ -87,7 +87,7 @@ Code Index lets any AI coding agent and any developer query a persistent structu
 **Key architecture decisions from ideation:**
 - Build on ast-grep rather than raw tree-sitter bindings — ast-grep's pattern matching, YAML rule engine, and multi-language support are already production-grade. No need to reimplement a parser layer.
 - The knowledge graph (nodes + edges in SQLite) is the core differentiator over ast-grep's existing MCP server. The graph enables traversal queries ("show me the subgraph around this function") that are impossible with stateless search.
-- Reindex-as-a-command rather than edit hooks. The tool does not intercept, wrap, or replace any agent's edit mechanism. Freshness is maintained via explicit `reindex` calls — manual, via `--watch` mode, or via the agent skill instructing the agent to reindex after edits. This decouples code-index from any specific agent's internals and means it works identically for Claude Code, Cursor, Codex, Gemini, OpenCode, vim, or any other editor. No background daemons required for basic usage; `--watch` is opt-in.
+- Reindex-as-a-command rather than edit hooks. The tool does not intercept, wrap, or replace any agent's edit mechanism. Freshness is maintained via explicit `reindex` calls — manual, via `--watch` mode, or via the agent skill instructing the agent to reindex after edits. This decouples codeindex from any specific agent's internals and means it works identically for Claude Code, Cursor, Codex, Gemini, OpenCode, vim, or any other editor. No background daemons required for basic usage; `--watch` is opt-in.
 - Per-file staleness tracking via content hash + `last_indexed_at` timestamp. Every query response includes a `stale` flag so the consumer (agent or human) always knows the freshness of what they're looking at. The `status` command gives a repo-wide health summary. This replaces the need for hooks — the consumer can decide when to reindex based on the staleness signal.
 - The CLI tree explorer is a co-equal deliverable — not an afterthought. It validates the knowledge graph for human consumption and builds developer trust before they hand it to their AI agent. If the human can see the graph is accurate, they'll trust the agent's use of it. Stale nodes are visually marked in the tree view.
 - Agent skills are distributed via skills.sh — the open agent skills ecosystem by Vercel Labs. This is the standard distribution layer for agent skills across the industry, supporting 19+ agents with a single `npx skills add` command that auto-detects the active agent and drops the skill file in the correct location.
@@ -96,7 +96,7 @@ Code Index lets any AI coding agent and any developer query a persistent structu
 The knowledge graph is effectively a code-specific RAG system. Instead of embedding code chunks into a vector store (which loses structure), Code Index builds a typed, directional graph where retrieval is graph traversal, not similarity search. "Give me context for refactoring function X" becomes: traverse the X node, collect its callers, callees, type dependencies, and the files they live in — return that subgraph as compact structured context. This is deterministic RAG: no hallucination risk in retrieval, no embedding drift, no relevance scoring ambiguity. The graph IS the retrieval mechanism.
 
 **Skill distribution via skills.sh:**
-Agent skills are published to skills.sh (https://skills.sh) as a GitHub repo (`code-index/skills`). The repo contains one skill file per supported agent — the skill logic is the same across agents (when to call `get_file_structure`, when to call `reindex`, how to interpret the `stale` flag) but the file format differs per agent convention. The skills.sh CLI (`npx skills add code-index/skills`) auto-detects which agent the developer is using and installs the correct file in the correct location. This means code-index supports every agent that skills.sh supports (currently 19+: Claude Code, Cursor, Codex, Gemini, OpenCode, Copilot, Windsurf, Cline, AMP, Goose, Roo, Kilo, Droid, and others) without building custom integrations for each one. New agents added to skills.sh get code-index support by adding one skill file to the repo.
+Agent skills are published to skills.sh (https://skills.sh) as a GitHub repo (`codeindex/skills`). The repo contains one skill file per supported agent — the skill logic is the same across agents (when to call `get_file_structure`, when to call `reindex`, how to interpret the `stale` flag) but the file format differs per agent convention. The skills.sh CLI (`npx skills add codeindex/skills`) auto-detects which agent the developer is using and installs the correct file in the correct location. This means codeindex supports every agent that skills.sh supports (currently 19+: Claude Code, Cursor, Codex, Gemini, OpenCode, Copilot, Windsurf, Cline, AMP, Goose, Roo, Kilo, Droid, and others) without building custom integrations for each one. New agents added to skills.sh get codeindex support by adding one skill file to the repo.
 
 ## Design Direction
 
@@ -123,7 +123,7 @@ milestone-agent: Milestone 1 must deliver: init with auto-detection for TypeScri
   three query primitives (get_file_structure, find_symbol, get_references) over MCP stdio,
   the reindex command (full and single-file), the status command, and staleness flags on all
   query responses. This is the complete read + reindex foundation.
-  Milestone 2 is the CLI tree view (code-index tree) — it depends on the graph being stable.
+  Milestone 2 is the CLI tree view (codeindex tree) — it depends on the graph being stable.
   Milestone 3 is publishing agent skills to skills.sh — one skill per agent, covering when to
   query, when to reindex, and how to interpret staleness flags. Start with Claude Code, Cursor,
   and Codex as the initial three, expand from there.
@@ -136,10 +136,10 @@ user-stories-agent: Key edge cases surfaced in ideation:
   - User has no config file and runs init in a repo with no recognizable project markers
   - Agent calls get_references on a symbol that exists in a file not yet indexed (new file)
   - Agent queries a stale file — response includes stale: true, agent decides whether to reindex first
-  - User runs code-index tree on a symbol with a very deep call graph — must handle depth limits gracefully
+  - User runs codeindex tree on a symbol with a very deep call graph — must handle depth limits gracefully
   - User configures only TypeScript but repo also has Go files — tree and queries should clearly indicate coverage boundaries
   - User runs reindex on a file that was deleted — graph removes nodes/edges for that file cleanly
-  - User installs skill via npx skills add but doesn't have code-index CLI installed yet — skill should detect this and guide them to install the CLI
+  - User installs skill via npx skills add but doesn't have codeindex CLI installed yet — skill should detect this and guide them to install the CLI
 
 product-brief-agent: Positioning angle = "persistent structural knowledge graph for AI coding agents
   and developers — works with every agent." Differentiate from ast-grep MCP (no persistence, no graph,
