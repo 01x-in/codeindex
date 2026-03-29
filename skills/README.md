@@ -5,7 +5,7 @@ Agent skills for [Code Index](https://github.com/01x-in/codeindex) — a persist
 ## Installation
 
 ```bash
-npx skills add code-index/skills
+npx skills add codeindex/skills
 ```
 
 This auto-detects your AI coding agent and installs the appropriate skill file.
@@ -14,7 +14,7 @@ This auto-detects your AI coding agent and installs the appropriate skill file.
 
 | Agent | Skill File | Install Location |
 |-------|-----------|-----------------|
-| Claude Code | `claude-code/CLAUDE.md` | `.claude/skills/code-index.md` |
+| Claude Code | `claude-code/CLAUDE.md` | `.claude/skills/codeindex.md` |
 | Cursor | `cursor/.cursorrules` | `.cursorrules` |
 | Codex | `codex/AGENTS.md` | `AGENTS.md` |
 
@@ -40,6 +40,6 @@ The skill instructs your AI coding agent to:
 
 If you prefer not to use `npx skills add`, copy the appropriate skill file manually:
 
-- **Claude Code:** Copy `claude-code/CLAUDE.md` to `.claude/skills/code-index.md` in your repo.
+- **Claude Code:** Copy `claude-code/CLAUDE.md` to `.claude/skills/codeindex.md` in your repo.
 - **Cursor:** Append `cursor/.cursorrules` content to your `.cursorrules` file.
 - **Codex:** Copy `codex/AGENTS.md` to your project root as `AGENTS.md`.

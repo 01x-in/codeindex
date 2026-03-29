@@ -1,5 +1,5 @@
 {
-  "name": "code-index",
+  "name": "codeindex",
   "version": "1.0.0",
   "description": "Persistent structural knowledge graph for codebases — query symbols, references, and call chains via MCP tools",
   "homepage": "https://github.com/01x-in/codeindex",
@@ -10,7 +10,7 @@
     "claude-code": {
       "file": "claude-code/CLAUDE.md",
       "format": "claude-md",
-      "install_path": ".claude/skills/code-index.md",
+      "install_path": ".claude/skills/codeindex.md",
       "description": "Code Index skill for Claude Code — structural code navigation via MCP"
     },
     "cursor": {

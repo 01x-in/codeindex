@@ -39,7 +39,7 @@ You have access to Code Index, a persistent structural knowledge graph of this c
 ## CLI Commands
 
 ```
-codeindex init              # Auto-detect languages, create .code-index.yaml
+codeindex init              # Auto-detect languages, create .codeindex.yaml
 codeindex reindex           # Re-index all stale files (incremental)
 codeindex reindex <path>    # Re-index a single file
 codeindex status            # Show index health summary

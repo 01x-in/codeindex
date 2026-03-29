@@ -49,7 +49,7 @@ Code Index runs as an MCP server: `codeindex serve` (stdio transport). The follo
 ## CLI Reference
 
 ```
-codeindex init              # Auto-detect languages, create .code-index.yaml
+codeindex init              # Auto-detect languages, create .codeindex.yaml
 codeindex reindex           # Re-index all stale files (incremental)
 codeindex reindex <path>    # Re-index a single file (< 100ms)
 codeindex status            # Show index health (stale files, node/edge counts)
