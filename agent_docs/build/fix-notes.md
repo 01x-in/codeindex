@@ -1,11 +1,10 @@
-# Build Review — M1-S1
+# Build Review -- M4-S3
 
 ## Verdict: PASS
 
 ## Review Notes
-- Config cascade (`LoadOrDetect`) correctly implements explicit > auto-detect > defaults
-- Missing config file returns defaults without error
-- 5 new tests added covering cascade precedence, auto-detect fallback, no markers, invalid config, missing file
-- All 23 tests pass
-- Binary builds and version command works
-- Code is clean Go with proper error handling
+- Tools list count updated from 4 to 6 in TestMCPToolsList
+- Added test verifying all 6 tool names present in tools/list response
+- Added populateMCPCallGraph helper (main -> handler -> helper chain)
+- 6 new MCP tests: GetCallers, GetCallers_WithDepth, GetCallers_InvalidParams, GetSubgraph, GetSubgraph_WithEdgeKinds, GetSubgraph_InvalidParams
+- All 16 MCP tests pass, full suite green

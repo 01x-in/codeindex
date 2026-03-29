@@ -1,23 +1,17 @@
-# Current Story: M4-S1
+# Current Story: M4-S3
 
 ## Story
-get_callers implementation — traces the call graph upstream from a function.
+MCP tool registration for get_callers and get_subgraph
 
 ## Acceptance Criteria
-- Configurable depth (default 3, max 10)
-- Returns caller chain with file paths, line numbers, stale flags
-- Handles cycles gracefully (visited set)
-- Returns CallerResult slice + QueryMetadata
+- Both tools registered in the MCP server with correct schemas
+- Parameter validation (symbol required, depth optional with defaults, edge_kinds optional)
+- Response includes staleness metadata
+- RFC 7807 error responses for invalid params
+- TestMCPToolsList updated to expect 6 tools
+- New tests: TestMCPToolCall_GetCallers, TestMCPToolCall_GetSubgraph
 
-## Relevant System Design
-- `query.Engine.GetCallers(symbolName string, depth int) ([]CallerResult, QueryMetadata, error)`
-- Uses `graph.Store.GetEdgesTo(nodeID, "calls")` to trace callers upstream
-- Visited set prevents infinite loops on cycles
-- Depth limited: default 3, max 10
-
-## Implementation Notes
-- Follow the same pattern as GetReferences: find nodes by name, walk edges, collect results
-- Walk "calls" edges in reverse (GetEdgesTo) to find who calls the target
-- BFS with depth tracking and visited set
-- Each CallerResult includes: Name, File, Line, Depth, Stale
-- QueryMetadata includes stale_files list
+## Status
+Tool definitions and handlers already implemented in server.go.
+TestMCPToolsList expects 4 tools, needs update to 6.
+Need MCP handler tests for the two new tools.
