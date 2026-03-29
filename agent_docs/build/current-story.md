@@ -1,19 +1,23 @@
-# Current Story: M1-S4
+# Current Story: M2-S1
 
-## Story
-Content hashing + staleness detection
+## Bubbletea app scaffold + tree data model
 
-## Acceptance Criteria
-- [x] SHA-256 content hash computed for each indexed file
-- [x] `file_metadata` stores `content_hash` and `last_indexed_at`
-- [ ] `IsStale(filePath)` reads current file, computes hash, compares to stored hash
-- [ ] Returns `true` if hashes differ or file not in metadata
-- [ ] Returns `false` if hashes match
-- [ ] Handles deleted files (file gone from disk = stale)
-- [ ] Handles new files (not in metadata = stale)
-- [ ] Unit tests cover: fresh file, modified file, deleted file, new file
+**Acceptance Criteria:**
+- [ ] Bubbletea app initializes and renders to terminal
+- [ ] Tree node model: symbol name, kind icon, file path, line number, stale flag, children (lazy-loadable)
+- [ ] Root node loaded from graph store query
+- [ ] `q` quits the app cleanly
+- [ ] App handles terminal resize gracefully
 
-## Current State
-- hash.File() and hash.Bytes() work
-- Indexer.IsStale() exists but needs proper absolute path handling
-- Need staleness tests
+**Relevant System Design:**
+- TUI framework: charmbracelet/bubbletea
+- Styling: charmbracelet/lipgloss
+- Components: charmbracelet/bubbles
+- Package: internal/tui/ (app.go, tree.go, preview.go, keymap.go, styles.go)
+- Tree node shows: symbol kind prefix (fn/class/type/iface/var/exp), file path, line number
+- Key bindings: q quits
+
+**Dependencies needed:**
+- github.com/charmbracelet/bubbletea
+- github.com/charmbracelet/lipgloss
+- github.com/charmbracelet/bubbles

@@ -48,7 +48,7 @@ Read agent_docs/system-design.md for the full list before writing any code.
 - Race detector: `go test -race ./...`
 - Type check:  `go vet ./...`
 - Lint:        `golangci-lint run ./...`
-- Build:       `go build -o bin/code-index ./cmd/code-index`
+- Build:       `go build -o bin/codeindex ./cmd/codeindex`
 - Build+run:   `make dev`
 
 ## UI/UX Review Gate (runs after all stories in a milestone pass build-review)

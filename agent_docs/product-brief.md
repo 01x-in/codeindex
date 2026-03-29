@@ -57,10 +57,10 @@ Two consumption surfaces:
 ## Key Features (Prioritized)
 
 ### Must-Have (M1)
-1. `code-index init` — auto-detect languages, generate config, build initial index
+1. `codeindex init` — auto-detect languages, generate config, build initial index
 2. SQLite knowledge graph — nodes (symbols) + edges (relationships) + staleness metadata
-3. `code-index reindex` — full (incremental) and single-file (< 100ms)
-4. `code-index status` — index health dashboard
+3. `codeindex reindex` — full (incremental) and single-file (< 100ms)
+4. `codeindex status` — index health dashboard
 5. MCP stdio server — get_file_structure, find_symbol, get_references, reindex
 6. TypeScript language support
 
@@ -109,7 +109,7 @@ Two consumption surfaces:
 
 - Single static Go binary, no runtime dependencies
 - ast-grep is an external prerequisite (not bundled)
-- All data local (`.code-index/` directory)
+- All data local (`.codeindex/` directory)
 - Pure Go SQLite (`modernc.org/sqlite`) — no CGo
 - MCP stdio transport only (no HTTP server)
 - Standard terminal emulators only (no GPU rendering)
