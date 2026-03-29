@@ -1,23 +1,20 @@
-# Current Story: M2-S1
+# Current Story: M3-S1
 
-## Bubbletea app scaffold + tree data model
+## Story
+Claude Code skill file
 
-**Acceptance Criteria:**
-- [ ] Bubbletea app initializes and renders to terminal
-- [ ] Tree node model: symbol name, kind icon, file path, line number, stale flag, children (lazy-loadable)
-- [ ] Root node loaded from graph store query
-- [ ] `q` quits the app cleanly
-- [ ] App handles terminal resize gracefully
+## Acceptance Criteria
+- [ ] Skill instructs: call `get_file_structure` before reading any file
+- [ ] Skill instructs: call `reindex` after every file edit
+- [ ] Skill instructs: check `stale` flag and reindex if true before trusting data
+- [ ] Skill instructs: use `find_symbol` for "where is X defined?" instead of grep
+- [ ] Skill instructs: use `get_references` for "who uses X?" instead of grep
+- [ ] Follows Claude Code CLAUDE.md / skill file conventions
+- [ ] Tested by manual installation and agent interaction
 
-**Relevant System Design:**
-- TUI framework: charmbracelet/bubbletea
-- Styling: charmbracelet/lipgloss
-- Components: charmbracelet/bubbles
-- Package: internal/tui/ (app.go, tree.go, preview.go, keymap.go, styles.go)
-- Tree node shows: symbol kind prefix (fn/class/type/iface/var/exp), file path, line number
-- Key bindings: q quits
-
-**Dependencies needed:**
-- github.com/charmbracelet/bubbletea
-- github.com/charmbracelet/lipgloss
-- github.com/charmbracelet/bubbles
+## Context
+- CLI binary: `codeindex` (no hyphen)
+- MCP server: `codeindex serve` over stdio
+- MCP tools: get_file_structure, find_symbol, get_references, reindex, get_callers, get_subgraph
+- All responses include `stale` flag and metadata
+- Claude Code skills go in CLAUDE.md or .claude/ directory

@@ -11,7 +11,7 @@
 - Date: 2026-03-28
 - Branch: milestone/1
 - Status: COMPLETE
-- PR: #2 (open, review fixes pushed)
+- PR: #2 (merged)
 
 ### Stories Completed
 | ID | Description | Commit |
@@ -45,3 +45,32 @@
 - Edge count is 0 across files because edge targets must exist before edges can be created; edges within same file resolve correctly
 - ast-grep invoked via --inline-rules with --- separators for multi-rule single invocation
 - Symbol name extraction uses regex on match text field (not meta-variables)
+
+## Milestone 2: CLI Tree Explorer
+- Date: 2026-03-28
+- Branch: milestone/2
+- Status: COMPLETE
+- PR: #3 (open)
+
+## Milestone 3: Agent Skills Distribution
+- Date: 2026-03-28
+- Branch: milestone/3
+- Status: COMPLETE
+
+### Stories Completed
+| ID | Description | Commit |
+|----|-------------|--------|
+| M3-S1 | Claude Code skill file (CLAUDE.md) with MCP tool usage instructions | 5ca2e07 |
+| M3-S2 | Cursor skill file (.cursorrules) with MCP tool instructions | d065cf5 |
+| M3-S3 | Codex skill file (AGENTS.md) with MCP tool instructions | 81e1d0a |
+| M3-S4 | skills.sh repo structure (skills.json, README.md) | f2ea69c |
+| M3-S5 | Skill installation validation tests (JSON validity, consistency, prereqs) | f5215f5 |
+
+### Test Count
+- 32 skill-specific tests, all passing
+- Tests cover: file existence, MCP tool mentions, workflow instructions, stale flag explanation, binary name correctness, skills.json validity, cross-skill consistency, prerequisite checks
+
+### Notes
+- skills.sh external repo publishing requires human action (create GitHub repo, register with skills.sh)
+- All skill files use `codeindex` (no hyphen) consistently
+- skills.json follows skills.sh conventions with prerequisite checks for both codeindex and ast-grep
