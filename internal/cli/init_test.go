@@ -48,7 +48,7 @@ func TestInitWithYesFlag_TypeScript(t *testing.T) {
 
 	// Verify output mentions typescript.
 	assert.Contains(t, stdout.String(), "typescript")
-	assert.Contains(t, stdout.String(), "Wrote .code-index.yaml")
+	assert.Contains(t, stdout.String(), "Wrote .codeindex.yaml")
 }
 
 func TestInitWithYesFlag_Go(t *testing.T) {
@@ -109,7 +109,7 @@ func TestInitNoLanguagesDetected(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Contains(t, stdout.String(), "No languages detected")
-	assert.Contains(t, stdout.String(), "Wrote .code-index.yaml")
+	assert.Contains(t, stdout.String(), "Wrote .codeindex.yaml")
 
 	// Config should have empty languages.
 	cfg, err := config.Load(filepath.Join(dir, config.ConfigFileName))
@@ -126,10 +126,10 @@ func TestInitCreatesGitignore(t *testing.T) {
 	err := cli.RunInit(dir, true, stdin, &stdout, &stderr)
 	require.NoError(t, err)
 
-	// .gitignore should exist and contain .code-index/
+	// .gitignore should exist and contain .codeindex/
 	data, err := os.ReadFile(filepath.Join(dir, ".gitignore"))
 	require.NoError(t, err)
-	assert.Contains(t, string(data), ".code-index/")
+	assert.Contains(t, string(data), ".codeindex/")
 }
 
 func TestInitAppendsToExistingGitignore(t *testing.T) {
@@ -148,14 +148,14 @@ func TestInitAppendsToExistingGitignore(t *testing.T) {
 	require.NoError(t, err)
 	content := string(data)
 	assert.Contains(t, content, "node_modules/")
-	assert.Contains(t, content, ".code-index/")
+	assert.Contains(t, content, ".codeindex/")
 }
 
 func TestInitDoesNotDuplicateGitignoreEntry(t *testing.T) {
 	dir := t.TempDir()
 
 	// .gitignore already has the entry.
-	os.WriteFile(filepath.Join(dir, ".gitignore"), []byte(".code-index/\n"), 0644)
+	os.WriteFile(filepath.Join(dir, ".gitignore"), []byte(".codeindex/\n"), 0644)
 
 	var stdout, stderr bytes.Buffer
 	stdin := mockStdin(t, "")
@@ -168,7 +168,7 @@ func TestInitDoesNotDuplicateGitignoreEntry(t *testing.T) {
 	// Should only appear once.
 	count := 0
 	for _, line := range bytes.Split(data, []byte("\n")) {
-		if string(bytes.TrimSpace(line)) == ".code-index/" {
+		if string(bytes.TrimSpace(line)) == ".codeindex/" {
 			count++
 		}
 	}

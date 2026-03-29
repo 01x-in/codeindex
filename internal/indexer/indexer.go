@@ -415,7 +415,7 @@ func isIgnoredDir(name string) bool {
 		".git":         true,
 		"dist":         true,
 		"build":        true,
-		".code-index":  true,
+		".codeindex":  true,
 		"__pycache__":  true,
 		"target":       true,
 	}
