@@ -48,7 +48,7 @@ func runReindex(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("loading config: %w", err)
 	}
 	if !found && len(cfg.Languages) == 0 {
-		return fmt.Errorf("no .code-index.yaml found and no languages detected. Run 'code-index init' first")
+		return fmt.Errorf("no .codeindex.yaml found and no languages detected. Run 'codeindex init' first")
 	}
 
 	// Check ast-grep.

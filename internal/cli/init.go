@@ -13,9 +13,9 @@ import (
 
 var initCmd = &cobra.Command{
 	Use:   "init",
-	Short: "Auto-detect languages and initialize .code-index.yaml",
+	Short: "Auto-detect languages and initialize .codeindex.yaml",
 	Long: `Detects languages from project markers (package.json, go.mod, pyproject.toml,
-Cargo.toml), proposes detected config, and writes .code-index.yaml on confirmation.`,
+Cargo.toml), proposes detected config, and writes .codeindex.yaml on confirmation.`,
 	RunE: runInit,
 }
 
@@ -41,7 +41,7 @@ func RunInit(dir string, yes bool, stdin *os.File, stdout, stderr interface{ Wri
 	// Check if config already exists.
 	if _, err := os.Stat(configPath); err == nil {
 		if !yes {
-			fmt.Fprintf(stdout, ".code-index.yaml already exists. Overwrite? [y/N] ")
+			fmt.Fprintf(stdout, ".codeindex.yaml already exists. Overwrite? [y/N] ")
 			reader := bufio.NewReader(stdin)
 			answer, _ := reader.ReadString('\n')
 			answer = strings.TrimSpace(strings.ToLower(answer))
@@ -74,7 +74,7 @@ func RunInit(dir string, yes bool, stdin *os.File, stdout, stderr interface{ Wri
 		fmt.Fprintln(stdout)
 	} else {
 		fmt.Fprintln(stdout, "No languages detected from project markers.")
-		fmt.Fprintln(stdout, "Writing config with empty languages list — edit .code-index.yaml to add languages.")
+		fmt.Fprintln(stdout, "Writing config with empty languages list — edit .codeindex.yaml to add languages.")
 		fmt.Fprintln(stdout)
 	}
 
@@ -111,7 +111,7 @@ func RunInit(dir string, yes bool, stdin *os.File, stdout, stderr interface{ Wri
 	}
 	fmt.Fprintln(stdout)
 
-	// Add .code-index/ to .gitignore.
+	// Add .codeindex/ to .gitignore.
 	if err := ensureGitignore(dir, cfg.IndexPath); err != nil {
 		return err
 	}
