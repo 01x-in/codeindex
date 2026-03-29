@@ -38,9 +38,9 @@ rule:
   kind: call_expression`
 
 // GoRules is the inline rules YAML for Go symbol extraction.
-// Note: Go's tree-sitter grammar nests struct_type/interface_type inside
-// type_spec inside type_declaration. We match type_declaration and
-// differentiate struct vs interface in the parser via text inspection.
+// We match type_spec (not type_declaration) so that grouped type blocks
+// like `type ( A struct{}; B interface{} )` emit one match per type spec
+// instead of one match for the whole block.
 const GoRules = `id: go-function-def
 language: Go
 rule:
@@ -54,7 +54,7 @@ rule:
 id: go-type-decl
 language: Go
 rule:
-  kind: type_declaration
+  kind: type_spec
 ---
 id: go-import
 language: Go
