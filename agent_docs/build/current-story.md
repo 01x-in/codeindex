@@ -1,17 +1,16 @@
-# Current Story: M4-S3
+# Current Story: M4-S4
 
 ## Story
-MCP tool registration for get_callers and get_subgraph
+Performance optimization for deep traversals
 
 ## Acceptance Criteria
-- Both tools registered in the MCP server with correct schemas
-- Parameter validation (symbol required, depth optional with defaults, edge_kinds optional)
-- Response includes staleness metadata
-- RFC 7807 error responses for invalid params
-- TestMCPToolsList updated to expect 6 tools
-- New tests: TestMCPToolCall_GetCallers, TestMCPToolCall_GetSubgraph
+- Recursive CTE for SQLite-level traversal (avoid N+1 queries)
+- Benchmark: get_subgraph depth=2 < 50ms on 1000-node graph
+- Benchmark: get_callers depth=3 < 50ms on 1000-node graph
+- No regressions in existing tests
 
-## Status
-Tool definitions and handlers already implemented in server.go.
-TestMCPToolsList expects 4 tools, needs update to 6.
-Need MCP handler tests for the two new tools.
+## Implementation Plan
+1. Add GetCallersViaCTE and GetNeighborhoodViaCTE methods to graph.Store
+2. Update query engine to use CTE-based methods
+3. Add benchmark tests with 1000-node graph
+4. Verify existing tests still pass

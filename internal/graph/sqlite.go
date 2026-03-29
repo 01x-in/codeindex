@@ -148,7 +148,6 @@ func (s *SQLiteStore) DeleteFileData(filePath string) error {
 	}
 	defer tx.Rollback()
 
-	// Delete edges referencing nodes in this file.
 	_, err = tx.Exec(`
 		DELETE FROM edges WHERE source_id IN (SELECT id FROM nodes WHERE file_path = ?)
 		   OR target_id IN (SELECT id FROM nodes WHERE file_path = ?)
@@ -157,13 +156,11 @@ func (s *SQLiteStore) DeleteFileData(filePath string) error {
 		return fmt.Errorf("deleting edges: %w", err)
 	}
 
-	// Delete nodes in this file.
 	_, err = tx.Exec(`DELETE FROM nodes WHERE file_path = ?`, filePath)
 	if err != nil {
 		return fmt.Errorf("deleting nodes: %w", err)
 	}
 
-	// Delete file metadata.
 	_, err = tx.Exec(`DELETE FROM file_metadata WHERE file_path = ?`, filePath)
 	if err != nil {
 		return fmt.Errorf("deleting file metadata: %w", err)
@@ -222,7 +219,6 @@ func (s *SQLiteStore) FindNodesByFile(filePath string) ([]Node, error) {
 }
 
 // GetEdgesFrom returns edges originating from the given node.
-// If kind is empty, returns all edge kinds.
 func (s *SQLiteStore) GetEdgesFrom(nodeID int64, kind string) ([]Edge, error) {
 	var query string
 	var args []interface{}
@@ -242,7 +238,6 @@ func (s *SQLiteStore) GetEdgesFrom(nodeID int64, kind string) ([]Edge, error) {
 }
 
 // GetEdgesTo returns edges pointing to the given node.
-// If kind is empty, returns all edge kinds.
 func (s *SQLiteStore) GetEdgesTo(nodeID int64, kind string) ([]Edge, error) {
 	var query string
 	var args []interface{}
@@ -362,6 +357,239 @@ func (s *SQLiteStore) GetNeighborhood(nodeID int64, depth int, edgeKinds []strin
 	}
 
 	return nodes, allEdges, nil
+}
+
+// GetCallersCTE traces the call graph upstream using a recursive CTE.
+// Accepts multiple seed node IDs and traverses "calls" edges in reverse.
+// Returns one entry per unique caller node at its minimum BFS depth.
+// Seed nodes are excluded from results. Cycles are handled gracefully.
+func (s *SQLiteStore) GetCallersCTE(nodeIDs []int64, maxDepth int) ([]CallerChainEntry, error) {
+	if len(nodeIDs) == 0 {
+		return nil, nil
+	}
+	if maxDepth < 1 {
+		maxDepth = 3
+	}
+	if maxDepth > 10 {
+		maxDepth = 10
+	}
+
+	// Build seed values for the CTE base case.
+	seedParts := make([]string, len(nodeIDs))
+	args := make([]interface{}, 0, len(nodeIDs)*2+1)
+	for i, id := range nodeIDs {
+		seedParts[i] = "SELECT ? AS node_id, 0 AS depth"
+		args = append(args, id)
+	}
+	seedSQL := strings.Join(seedParts, " UNION ALL ")
+
+	// Build NOT IN clause for excluding seed nodes from results.
+	seedExcludePh := placeholders(len(nodeIDs))
+
+	// Recursive CTE: walk "calls" edges in reverse (target -> source).
+	// UNION deduplicates (node_id, depth) pairs. The outer query groups by
+	// node_id with MIN(depth) and excludes seed nodes to get clean results.
+	query := fmt.Sprintf(`
+		WITH RECURSIVE caller_chain(node_id, depth) AS (
+			%s
+			UNION
+			SELECT e.source_id, cc.depth + 1
+			FROM caller_chain cc
+			JOIN edges e ON e.target_id = cc.node_id AND e.kind = 'calls'
+			WHERE cc.depth < ?
+		)
+		SELECT n.id, n.name, n.kind, n.file_path, n.line_start, n.line_end,
+		       n.col_start, n.col_end, n.scope, n.signature, n.exported,
+		       n.language, n.created_at, n.updated_at, md.min_depth
+		FROM (
+			SELECT node_id, MIN(depth) AS min_depth
+			FROM caller_chain
+			WHERE depth > 0
+			  AND node_id NOT IN (%s)
+			GROUP BY node_id
+		) md
+		JOIN nodes n ON n.id = md.node_id
+		ORDER BY md.min_depth ASC
+	`, seedSQL, seedExcludePh)
+
+	// Args: seed IDs for CTE, maxDepth, seed IDs for NOT IN exclusion.
+	args = append(args, maxDepth)
+	for _, id := range nodeIDs {
+		args = append(args, id)
+	}
+
+	rows, err := s.db.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("executing callers CTE: %w", err)
+	}
+	defer rows.Close()
+
+	var results []CallerChainEntry
+	for rows.Next() {
+		var n Node
+		var exported int
+		var createdAt, updatedAt string
+		var depth int
+		if err := rows.Scan(&n.ID, &n.Name, &n.Kind, &n.FilePath, &n.LineStart, &n.LineEnd,
+			&n.ColStart, &n.ColEnd, &n.Scope, &n.Signature, &exported, &n.Language,
+			&createdAt, &updatedAt, &depth); err != nil {
+			return nil, fmt.Errorf("scanning caller chain entry: %w", err)
+		}
+		n.Exported = exported == 1
+		n.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
+		n.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAt)
+		results = append(results, CallerChainEntry{CallerNode: n, Depth: depth})
+	}
+	return results, rows.Err()
+}
+
+// GetNeighborhoodCTE retrieves nodes and edges within a bounded neighborhood using a recursive CTE.
+// Traverses edges in both directions. Edge kinds can be filtered (empty = all kinds).
+// Uses UNION to prevent infinite loops on cycles.
+func (s *SQLiteStore) GetNeighborhoodCTE(nodeIDs []int64, maxDepth int, edgeKinds []string) ([]Node, []Edge, error) {
+	if len(nodeIDs) == 0 {
+		return nil, nil, nil
+	}
+	if maxDepth < 1 {
+		maxDepth = 2
+	}
+	if maxDepth > 10 {
+		maxDepth = 10
+	}
+
+	// Build seed values.
+	seedParts := make([]string, len(nodeIDs))
+	args := make([]interface{}, 0, len(nodeIDs)*2+1)
+	for i, id := range nodeIDs {
+		seedParts[i] = "SELECT ? AS node_id, 0 AS depth"
+		args = append(args, id)
+	}
+	seedSQL := strings.Join(seedParts, " UNION ALL ")
+
+	// Build edge kind filter clause.
+	edgeFilter := ""
+	if len(edgeKinds) > 0 {
+		kindPlaceholders := make([]string, len(edgeKinds))
+		for i := range edgeKinds {
+			kindPlaceholders[i] = "?"
+		}
+		edgeFilter = " AND e.kind IN (" + strings.Join(kindPlaceholders, ",") + ")"
+	}
+
+	edgeArgs := make([]interface{}, 0, len(edgeKinds))
+	for _, k := range edgeKinds {
+		edgeArgs = append(edgeArgs, k)
+	}
+
+	// CTE: traverse outgoing and incoming edges.
+	query := fmt.Sprintf(`
+		WITH RECURSIVE neighborhood(node_id, depth) AS (
+			%s
+			UNION
+			SELECT e.target_id, nb.depth + 1
+			FROM neighborhood nb
+			JOIN edges e ON e.source_id = nb.node_id%s
+			WHERE nb.depth < ?
+			UNION
+			SELECT e.source_id, nb.depth + 1
+			FROM neighborhood nb
+			JOIN edges e ON e.target_id = nb.node_id%s
+			WHERE nb.depth < ?
+		)
+		SELECT DISTINCT n.id, n.name, n.kind, n.file_path, n.line_start, n.line_end,
+		       n.col_start, n.col_end, n.scope, n.signature, n.exported,
+		       n.language, n.created_at, n.updated_at
+		FROM neighborhood nb
+		JOIN nodes n ON n.id = nb.node_id
+	`, seedSQL, edgeFilter, edgeFilter)
+
+	allArgs := append(args, edgeArgs...)
+	allArgs = append(allArgs, maxDepth)
+	allArgs = append(allArgs, edgeArgs...)
+	allArgs = append(allArgs, maxDepth)
+
+	rows, err := s.db.Query(query, allArgs...)
+	if err != nil {
+		return nil, nil, fmt.Errorf("executing neighborhood CTE (nodes): %w", err)
+	}
+	defer rows.Close()
+
+	nodeMap := map[int64]Node{}
+	for rows.Next() {
+		var n Node
+		var exported int
+		var createdAt, updatedAt string
+		if err := rows.Scan(&n.ID, &n.Name, &n.Kind, &n.FilePath, &n.LineStart, &n.LineEnd,
+			&n.ColStart, &n.ColEnd, &n.Scope, &n.Signature, &exported, &n.Language,
+			&createdAt, &updatedAt); err != nil {
+			return nil, nil, fmt.Errorf("scanning neighborhood node: %w", err)
+		}
+		n.Exported = exported == 1
+		n.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
+		n.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAt)
+		nodeMap[n.ID] = n
+	}
+	if err := rows.Err(); err != nil {
+		return nil, nil, err
+	}
+
+	if len(nodeMap) == 0 {
+		return nil, nil, nil
+	}
+
+	nodeIDList := make([]int64, 0, len(nodeMap))
+	for id := range nodeMap {
+		nodeIDList = append(nodeIDList, id)
+	}
+
+	edges, err := s.getEdgesBetweenNodes(nodeIDList, edgeKinds)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	nodes := make([]Node, 0, len(nodeMap))
+	for _, n := range nodeMap {
+		nodes = append(nodes, n)
+	}
+
+	return nodes, edges, nil
+}
+
+// getEdgesBetweenNodes returns all edges where both source and target are in the given node ID set.
+func (s *SQLiteStore) getEdgesBetweenNodes(nodeIDs []int64, edgeKinds []string) ([]Edge, error) {
+	if len(nodeIDs) == 0 {
+		return nil, nil
+	}
+
+	ph := placeholders(len(nodeIDs))
+	args := make([]interface{}, 0, len(nodeIDs)*2+len(edgeKinds))
+	for _, id := range nodeIDs {
+		args = append(args, id)
+	}
+	for _, id := range nodeIDs {
+		args = append(args, id)
+	}
+
+	query := fmt.Sprintf(`
+		SELECT id, source_id, target_id, kind, file_path, line, created_at
+		FROM edges
+		WHERE source_id IN (%s) AND target_id IN (%s)
+	`, ph, ph)
+
+	if len(edgeKinds) > 0 {
+		kindPh := placeholders(len(edgeKinds))
+		query += fmt.Sprintf(` AND kind IN (%s)`, kindPh)
+		for _, k := range edgeKinds {
+			args = append(args, k)
+		}
+	}
+
+	rows, err := s.db.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("getting edges between nodes: %w", err)
+	}
+	defer rows.Close()
+	return scanEdges(rows)
 }
 
 // NodeCount returns the total number of nodes in the graph.
