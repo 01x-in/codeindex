@@ -104,12 +104,12 @@ func TestClaudeCodeSkill(t *testing.T) {
 
 	t.Run("uses_correct_binary_name", func(t *testing.T) {
 		assert.Contains(t, content, "codeindex")
-		assert.NotContains(t, content, "code-index init",
-			"Must use 'codeindex' not 'code-index' for CLI commands")
-		assert.NotContains(t, content, "code-index reindex",
-			"Must use 'codeindex' not 'code-index' for CLI commands")
-		assert.NotContains(t, content, "code-index serve",
-			"Must use 'codeindex' not 'code-index' for CLI commands")
+		assert.NotContains(t, content, "codeindex init",
+			"Must use 'codeindex' not 'codeindex' for CLI commands")
+		assert.NotContains(t, content, "codeindex reindex",
+			"Must use 'codeindex' not 'codeindex' for CLI commands")
+		assert.NotContains(t, content, "codeindex serve",
+			"Must use 'codeindex' not 'codeindex' for CLI commands")
 	})
 
 	t.Run("follows_claude_code_conventions", func(t *testing.T) {
@@ -144,9 +144,9 @@ func TestCursorSkill(t *testing.T) {
 
 	t.Run("uses_correct_binary_name", func(t *testing.T) {
 		assert.Contains(t, content, "codeindex")
-		assert.NotContains(t, content, "code-index init")
-		assert.NotContains(t, content, "code-index reindex")
-		assert.NotContains(t, content, "code-index serve")
+		assert.NotContains(t, content, "codeindex init")
+		assert.NotContains(t, content, "codeindex reindex")
+		assert.NotContains(t, content, "codeindex serve")
 	})
 
 	t.Run("instructs_reindex_after_edits", func(t *testing.T) {
@@ -176,9 +176,9 @@ func TestCodexSkill(t *testing.T) {
 
 	t.Run("uses_correct_binary_name", func(t *testing.T) {
 		assert.Contains(t, content, "codeindex")
-		assert.NotContains(t, content, "code-index init")
-		assert.NotContains(t, content, "code-index reindex")
-		assert.NotContains(t, content, "code-index serve")
+		assert.NotContains(t, content, "codeindex init")
+		assert.NotContains(t, content, "codeindex reindex")
+		assert.NotContains(t, content, "codeindex serve")
 	})
 
 	t.Run("instructs_reindex_after_edits", func(t *testing.T) {
@@ -306,7 +306,7 @@ func TestSkillsJsonValidity(t *testing.T) {
 	})
 
 	t.Run("uses_correct_binary_name_in_prereqs", func(t *testing.T) {
-		// Ensure the prerequisite check command uses "codeindex" not "code-index"
+		// Ensure the prerequisite check command uses "codeindex" not "codeindex"
 		var data struct {
 			Prerequisites []struct {
 				Check   string `json:"check"`
@@ -318,8 +318,8 @@ func TestSkillsJsonValidity(t *testing.T) {
 
 		for _, prereq := range data.Prerequisites {
 			if strings.Contains(prereq.Check, "codeindex") {
-				assert.NotContains(t, prereq.Check, "code-index",
-					"prerequisite check should use 'codeindex' not 'code-index'")
+				assert.NotContains(t, prereq.Check, "codeindex",
+					"prerequisite check should use 'codeindex' not 'codeindex'")
 			}
 		}
 	})
