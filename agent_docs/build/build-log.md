@@ -17,12 +17,12 @@
 | ID | Description | Commit |
 |----|-------------|--------|
 | M1-S1 | Project scaffold + config system (cascade resolution, LoadOrDetect) | 74ba906 |
-| M1-S2 | `code-index init` with auto-detection, --yes flag, .gitignore handling | 3524d98 |
+| M1-S2 | `codeindex init` with auto-detection, --yes flag, .gitignore handling | 3524d98 |
 | M1-S3 | SQLite graph store + schema (UNIQUE constraints, upsert, index metadata) | 7e06b7d |
 | M1-S4 | Content hashing + staleness detection (IsStale, IsStaleFile, GetStaleFiles) | b9981ea |
 | M1-S5 | ast-grep integration + TypeScript indexer (inline rules, regex name extraction) | d9867f0 |
-| M1-S6 | `code-index reindex` (full incremental + single file) | 58db8c5 |
-| M1-S7 | `code-index status` command (health summary, JSON output) | 201df37 |
+| M1-S6 | `codeindex reindex` (full incremental + single file) | 58db8c5 |
+| M1-S7 | `codeindex status` command (health summary, JSON output) | 201df37 |
 | M1-S8 | MCP stdio server + tool handlers (JSON-RPC 2.0, RFC 7807 errors) | 2fe3e78 |
 | M1-S9 | Query engine: get_file_structure, find_symbol, get_references | 2fe3e78 |
 | M1-S10 | End-to-end integration tests (full workflow + MCP protocol compliance) | b068dcc |

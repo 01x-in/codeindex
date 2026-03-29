@@ -24,7 +24,7 @@ COMPLETE
 
 ### Package Structure Created
 ```
-cmd/code-index/main.go          -- Entry point
+cmd/codeindex/main.go          -- Entry point
 internal/cli/                    -- Cobra commands (root, init, reindex, status, serve, tree)
 internal/config/                 -- Config loading, detection, validation
 internal/graph/                  -- SQLite graph store (full implementation)
@@ -65,14 +65,14 @@ internal/watcher/                -- File watcher stub
 
 ### Build & Config Files
 - `Makefile` — build, test, lint, typecheck, dev, clean, install targets
-- `.gitignore` — Go, IDE, OS, code-index data patterns
+- `.gitignore` — Go, IDE, OS, codeindex data patterns
 - `CLAUDE.md` — Updated with test commands
 
 ## Build Verification
-- `go build ./cmd/code-index` — SUCCESS
+- `go build ./cmd/codeindex` — SUCCESS
 - `go test ./...` — 18 tests, ALL PASS
 - `go vet ./...` — CLEAN
-- Binary runs: `code-index version` prints "code-index dev"
+- Binary runs: `codeindex version` prints "codeindex dev"
 - All 7 CLI commands registered: init, reindex, status, serve, tree, version, help
 
 ## Human Attention Needed
@@ -84,6 +84,6 @@ go test ./...                    # all tests
 go test -v ./...                 # verbose
 go test -race ./...              # race detector
 go vet ./...                     # type check
-go build -o bin/code-index ./cmd/code-index  # build binary
+go build -o bin/codeindex ./cmd/codeindex  # build binary
 make dev                         # build and run
 ```

@@ -11,7 +11,7 @@ var (
 	Version = "dev"
 
 	rootCmd = &cobra.Command{
-		Use:   "code-index",
+		Use:   "codeindex",
 		Short: "Persistent structural knowledge graph for codebases",
 		Long: `Code Index builds a persistent knowledge graph of codebase structure
 using ast-grep's tree-sitter parsing, exposing MCP tool primitives for
@@ -24,7 +24,7 @@ AI coding agents and a CLI tree explorer for developers.`,
 		Use:   "version",
 		Short: "Print the version",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf("code-index %s\n", Version)
+			fmt.Printf("codeindex %s\n", Version)
 		},
 	}
 )
