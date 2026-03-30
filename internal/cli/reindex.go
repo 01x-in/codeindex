@@ -134,7 +134,8 @@ func reindexSingleFile(cmd *cobra.Command, dir string, cfg config.Config, store 
 	return nil
 }
 
-func reindexAll(cmd *cobra.Command, dir string, cfg config.Config, store *graph.SQLiteStore, runner *indexer.SubprocessRunner, jsonOutput bool, start time.Time) error {
+// reindexAllTo is the core implementation; cmd may be nil (e.g. called from init).
+func reindexAllTo(out interface{ Write([]byte) (int, error) }, dir string, cfg config.Config, store *graph.SQLiteStore, runner *indexer.SubprocessRunner, jsonOutput bool, start time.Time) error {
 	var allResults []indexer.IndexResult
 
 	// Clean up deleted files first.
@@ -168,25 +169,29 @@ func reindexAll(cmd *cobra.Command, dir string, cfg config.Config, store *graph.
 	duration := time.Since(start)
 
 	if jsonOutput {
-		out := ReindexResult{
+		result := ReindexResult{
 			FilesReindexed: len(allResults),
 			DurationMs:     duration.Milliseconds(),
 			Files:          allResults,
 		}
-		data, _ := json.MarshalIndent(out, "", "  ")
-		fmt.Fprintln(cmd.OutOrStdout(), string(data))
+		data, _ := json.MarshalIndent(result, "", "  ")
+		fmt.Fprintln(out, string(data))
 	} else {
-		fmt.Fprintf(cmd.OutOrStdout(), "Reindexed %d files in %dms\n", len(allResults), duration.Milliseconds())
+		fmt.Fprintf(out, "Reindexed %d files in %dms\n", len(allResults), duration.Milliseconds())
 		for _, r := range allResults {
 			if r.Status == "deleted" {
-				fmt.Fprintf(cmd.OutOrStdout(), "  %s (deleted)\n", r.FilePath)
+				fmt.Fprintf(out, "  %s (deleted)\n", r.FilePath)
 			} else {
-				fmt.Fprintf(cmd.OutOrStdout(), "  %s (+%d nodes, +%d edges)\n", r.FilePath, r.NodeCount, r.EdgeCount)
+				fmt.Fprintf(out, "  %s (+%d nodes, +%d edges)\n", r.FilePath, r.NodeCount, r.EdgeCount)
 			}
 		}
 	}
 
 	return nil
+}
+
+func reindexAll(cmd *cobra.Command, dir string, cfg config.Config, store *graph.SQLiteStore, runner *indexer.SubprocessRunner, jsonOutput bool, start time.Time) error {
+	return reindexAllTo(cmd.OutOrStdout(), dir, cfg, store, runner, jsonOutput, start)
 }
 
 // runWatch starts the fsnotify-based watch mode, auto-reindexing on file save.

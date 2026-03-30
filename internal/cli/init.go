@@ -6,8 +6,11 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/01x/codeindex/internal/config"
+	"github.com/01x/codeindex/internal/graph"
+	"github.com/01x/codeindex/internal/indexer"
 	"github.com/spf13/cobra"
 )
 
@@ -122,6 +125,34 @@ func RunInit(dir string, yes bool, stdin *os.File, stdout, stderr interface{ Wri
 		return err
 	}
 	fmt.Fprintf(stdout, "Added %s/ to .gitignore\n", cfg.IndexPath)
+
+	// Run initial index.
+	if len(cfg.Languages) == 0 {
+		fmt.Fprintln(stdout, "No languages configured — skipping initial index.")
+		return nil
+	}
+	if err := indexer.CheckInstalled(); err != nil {
+		fmt.Fprintf(stdout, "Skipping initial index: %v\n", err)
+		return nil
+	}
+	dbPath := filepath.Join(dir, cfg.IndexPath, "graph.db")
+	if err := os.MkdirAll(filepath.Dir(dbPath), 0755); err != nil {
+		return fmt.Errorf("creating index directory: %w", err)
+	}
+	store, err := graph.NewSQLiteStore(dbPath)
+	if err != nil {
+		return fmt.Errorf("opening graph store: %w", err)
+	}
+	defer store.Close()
+	if err := store.Migrate(); err != nil {
+		return fmt.Errorf("migrating schema: %w", err)
+	}
+	fmt.Fprintln(stdout, "Building initial index...")
+	runner := indexer.NewSubprocessRunner()
+	start := time.Now()
+	if err := reindexAllTo(stdout, dir, cfg, store, runner, false, start); err != nil {
+		return fmt.Errorf("initial index: %w", err)
+	}
 
 	return nil
 }
