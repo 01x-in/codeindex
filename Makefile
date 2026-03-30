@@ -28,3 +28,6 @@ clean:
 
 install:
 	go install $(LDFLAGS) ./cmd/codeindex
+
+release-dry-run:
+	goreleaser release --snapshot --clean
