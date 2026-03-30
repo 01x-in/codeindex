@@ -48,6 +48,22 @@ var (
 	// Go type discriminator patterns (support generics with type params).
 	goStructRe    = regexp.MustCompile(`\bstruct\s*\{`)
 	goInterfaceRe = regexp.MustCompile(`\binterface\s*\{`)
+
+	// Python-specific patterns.
+	pyFuncNameRe   = regexp.MustCompile(`def\s+(\w+)\s*\(`)
+	pyClassNameRe  = regexp.MustCompile(`class\s+(\w+)`)
+	pyImportNameRe = regexp.MustCompile(`^import\s+(\S+)`)
+	pyFromImportRe = regexp.MustCompile(`from\s+(\S+)\s+import`)
+	pyCallNameRe   = regexp.MustCompile(`^(\w+(?:\.\w+)*)\s*\(`)
+
+	// Rust-specific patterns.
+	// Support generic declarations: fn process<T>(...)
+	rustFuncNameRe   = regexp.MustCompile(`fn\s+(\w+)\s*(?:<[^>]*)?\s*\(`)
+	rustStructNameRe = regexp.MustCompile(`(?:pub\s+)?struct\s+(\w+)`)
+	rustEnumNameRe   = regexp.MustCompile(`(?:pub\s+)?enum\s+(\w+)`)
+	rustTraitNameRe  = regexp.MustCompile(`(?:pub\s+)?trait\s+(\w+)`)
+	rustUsePathRe    = regexp.MustCompile(`use\s+([\w:]+)(?:::\{([^}]+)\})?`)
+	rustCallNameRe   = regexp.MustCompile(`^(\w+(?:::\w+)*)\s*(?:::<[^>]*)?\s*\(`)
 )
 
 // nodeRuleIDs are the rule IDs that produce nodes (symbol definitions).
@@ -133,6 +149,60 @@ func ParseMatches(matches []AstGrepMatch, filePath string, language string) Pars
 
 		case "go-call-expr":
 			if edge := parseGoCall(m, filePath); edge != nil {
+				result.Edges = append(result.Edges, *edge)
+			}
+
+		// Python rules.
+		case "python-func-def":
+			if node := parsePythonFuncDef(m, filePath, language); node != nil {
+				result.Nodes = append(result.Nodes, *node)
+			}
+
+		case "python-class-def":
+			if node := parsePythonClassDef(m, filePath, language); node != nil {
+				result.Nodes = append(result.Nodes, *node)
+			}
+
+		case "python-import":
+			edges := parsePythonImport(m, filePath)
+			result.Edges = append(result.Edges, edges...)
+
+		case "python-from-import":
+			edges := parsePythonFromImport(m, filePath)
+			result.Edges = append(result.Edges, edges...)
+
+		case "python-call-expr":
+			if edge := parsePythonCall(m, filePath); edge != nil {
+				result.Edges = append(result.Edges, *edge)
+			}
+
+		// Rust rules.
+		case "rust-func-def":
+			if node := parseRustFuncDef(m, filePath, language); node != nil {
+				result.Nodes = append(result.Nodes, *node)
+			}
+
+		case "rust-struct-def":
+			if node := parseRustStructDef(m, filePath, language); node != nil {
+				result.Nodes = append(result.Nodes, *node)
+			}
+
+		case "rust-enum-def":
+			if node := parseRustEnumDef(m, filePath, language); node != nil {
+				result.Nodes = append(result.Nodes, *node)
+			}
+
+		case "rust-trait-def":
+			if node := parseRustTraitDef(m, filePath, language); node != nil {
+				result.Nodes = append(result.Nodes, *node)
+			}
+
+		case "rust-use-stmt":
+			edges := parseRustUse(m, filePath)
+			result.Edges = append(result.Edges, edges...)
+
+		case "rust-call-expr":
+			if edge := parseRustCall(m, filePath); edge != nil {
 				result.Edges = append(result.Edges, *edge)
 			}
 		}
@@ -626,6 +696,353 @@ func isBuiltinCall(name string) bool {
 		"Promise.resolve": true,
 		"Promise.reject":  true,
 		"Promise.all":     true,
+	}
+	return builtins[name]
+}
+
+// --- Python parsers ---
+
+func parsePythonFuncDef(m AstGrepMatch, filePath string, language string) *graph.Node {
+	match := pyFuncNameRe.FindStringSubmatch(m.Text)
+	if match == nil {
+		return nil
+	}
+
+	name := match[1]
+	exported := !strings.HasPrefix(name, "_")
+
+	return &graph.Node{
+		Name:      name,
+		Kind:      "fn",
+		FilePath:  filePath,
+		LineStart: m.Range.Start.Line + 1,
+		LineEnd:   m.Range.End.Line + 1,
+		ColStart:  m.Range.Start.Column,
+		ColEnd:    m.Range.End.Column,
+		Exported:  exported,
+		Language:  language,
+	}
+}
+
+func parsePythonClassDef(m AstGrepMatch, filePath string, language string) *graph.Node {
+	match := pyClassNameRe.FindStringSubmatch(m.Text)
+	if match == nil {
+		return nil
+	}
+
+	name := match[1]
+	exported := !strings.HasPrefix(name, "_")
+
+	return &graph.Node{
+		Name:      name,
+		Kind:      "class",
+		FilePath:  filePath,
+		LineStart: m.Range.Start.Line + 1,
+		LineEnd:   m.Range.End.Line + 1,
+		ColStart:  m.Range.Start.Column,
+		ColEnd:    m.Range.End.Column,
+		Exported:  exported,
+		Language:  language,
+	}
+}
+
+func parsePythonImport(m AstGrepMatch, filePath string) []ParsedEdge {
+	// "import foo" or "import foo.bar" or "import foo, bar"
+	text := strings.TrimSpace(m.Text)
+	// Strip "import " prefix and split by comma.
+	withoutKeyword := strings.TrimPrefix(text, "import ")
+	parts := strings.Split(withoutKeyword, ",")
+
+	var edges []ParsedEdge
+	for _, part := range parts {
+		name := strings.TrimSpace(part)
+		if name == "" {
+			continue
+		}
+		// For dotted imports (foo.bar), use the top-level module.
+		segments := strings.Split(name, ".")
+		targetName := segments[0]
+
+		edges = append(edges, ParsedEdge{
+			SourceName: "",
+			TargetName: targetName,
+			Kind:       "imports",
+			FilePath:   filePath,
+			Line:       m.Range.Start.Line + 1,
+		})
+	}
+	return edges
+}
+
+func parsePythonFromImport(m AstGrepMatch, filePath string) []ParsedEdge {
+	// "from foo import bar, baz" or "from foo.bar import Baz"
+	text := strings.TrimSpace(m.Text)
+
+	fromMatch := pyFromImportRe.FindStringSubmatch(text)
+	if fromMatch == nil {
+		return nil
+	}
+	_ = fromMatch[1] // module path — available for future resolution
+
+	// Extract imported names after "import".
+	importIdx := strings.Index(text, " import ")
+	if importIdx < 0 {
+		return nil
+	}
+	namesPart := strings.TrimSpace(text[importIdx+8:])
+	// Strip parentheses if present.
+	namesPart = strings.Trim(namesPart, "()")
+
+	var edges []ParsedEdge
+	for _, name := range strings.Split(namesPart, ",") {
+		name = strings.TrimSpace(name)
+		if name == "" || name == "*" {
+			continue
+		}
+		// Handle "Name as Alias".
+		parts := strings.Fields(name)
+		targetName := parts[0]
+
+		edges = append(edges, ParsedEdge{
+			SourceName: "",
+			TargetName: targetName,
+			Kind:       "imports",
+			FilePath:   filePath,
+			Line:       m.Range.Start.Line + 1,
+		})
+	}
+	return edges
+}
+
+func parsePythonCall(m AstGrepMatch, filePath string) *ParsedEdge {
+	match := pyCallNameRe.FindStringSubmatch(m.Text)
+	if match == nil {
+		return nil
+	}
+
+	calledName := match[1]
+	if isPythonBuiltinCall(calledName) {
+		return nil
+	}
+
+	return &ParsedEdge{
+		SourceName: "",
+		TargetName: calledName,
+		Kind:       "calls",
+		FilePath:   filePath,
+		Line:       m.Range.Start.Line + 1,
+	}
+}
+
+// isPythonBuiltinCall returns true for Python built-in calls that shouldn't be edges.
+func isPythonBuiltinCall(name string) bool {
+	builtins := map[string]bool{
+		"print":      true,
+		"len":        true,
+		"range":      true,
+		"str":        true,
+		"int":        true,
+		"float":      true,
+		"bool":       true,
+		"list":       true,
+		"dict":       true,
+		"set":        true,
+		"tuple":      true,
+		"type":       true,
+		"isinstance": true,
+		"issubclass": true,
+		"hasattr":    true,
+		"getattr":    true,
+		"setattr":    true,
+		"super":      true,
+		"enumerate":  true,
+		"zip":        true,
+		"map":        true,
+		"filter":     true,
+		"sorted":     true,
+		"reversed":   true,
+		"open":       true,
+		"repr":       true,
+		"vars":       true,
+		"dir":        true,
+		"id":         true,
+	}
+	return builtins[name]
+}
+
+// --- Rust parsers ---
+
+func parseRustFuncDef(m AstGrepMatch, filePath string, language string) *graph.Node {
+	match := rustFuncNameRe.FindStringSubmatch(m.Text)
+	if match == nil {
+		return nil
+	}
+
+	name := match[1]
+	exported := strings.Contains(m.Text, "pub ")
+
+	return &graph.Node{
+		Name:      name,
+		Kind:      "fn",
+		FilePath:  filePath,
+		LineStart: m.Range.Start.Line + 1,
+		LineEnd:   m.Range.End.Line + 1,
+		ColStart:  m.Range.Start.Column,
+		ColEnd:    m.Range.End.Column,
+		Exported:  exported,
+		Language:  language,
+	}
+}
+
+func parseRustStructDef(m AstGrepMatch, filePath string, language string) *graph.Node {
+	match := rustStructNameRe.FindStringSubmatch(m.Text)
+	if match == nil {
+		return nil
+	}
+
+	return &graph.Node{
+		Name:      match[1],
+		Kind:      "class",
+		FilePath:  filePath,
+		LineStart: m.Range.Start.Line + 1,
+		LineEnd:   m.Range.End.Line + 1,
+		ColStart:  m.Range.Start.Column,
+		ColEnd:    m.Range.End.Column,
+		Exported:  strings.Contains(m.Text, "pub "),
+		Language:  language,
+	}
+}
+
+func parseRustEnumDef(m AstGrepMatch, filePath string, language string) *graph.Node {
+	match := rustEnumNameRe.FindStringSubmatch(m.Text)
+	if match == nil {
+		return nil
+	}
+
+	return &graph.Node{
+		Name:      match[1],
+		Kind:      "class",
+		FilePath:  filePath,
+		LineStart: m.Range.Start.Line + 1,
+		LineEnd:   m.Range.End.Line + 1,
+		ColStart:  m.Range.Start.Column,
+		ColEnd:    m.Range.End.Column,
+		Exported:  strings.Contains(m.Text, "pub "),
+		Language:  language,
+	}
+}
+
+func parseRustTraitDef(m AstGrepMatch, filePath string, language string) *graph.Node {
+	match := rustTraitNameRe.FindStringSubmatch(m.Text)
+	if match == nil {
+		return nil
+	}
+
+	return &graph.Node{
+		Name:      match[1],
+		Kind:      "type",
+		FilePath:  filePath,
+		LineStart: m.Range.Start.Line + 1,
+		LineEnd:   m.Range.End.Line + 1,
+		ColStart:  m.Range.Start.Column,
+		ColEnd:    m.Range.End.Column,
+		Exported:  strings.Contains(m.Text, "pub "),
+		Language:  language,
+	}
+}
+
+func parseRustUse(m AstGrepMatch, filePath string) []ParsedEdge {
+	match := rustUsePathRe.FindStringSubmatch(m.Text)
+	if match == nil {
+		return nil
+	}
+
+	line := m.Range.Start.Line + 1
+
+	// Grouped import: use crate::module::{Name1, Name2}
+	if match[2] != "" {
+		var edges []ParsedEdge
+		for _, item := range strings.Split(match[2], ",") {
+			name := strings.TrimSpace(item)
+			// Handle aliased imports: SomeName as Alias
+			if idx := strings.Index(name, " as "); idx >= 0 {
+				name = strings.TrimSpace(name[idx+4:])
+			}
+			if name != "" && name != "_" {
+				edges = append(edges, ParsedEdge{
+					SourceName: "",
+					TargetName: name,
+					Kind:       "imports",
+					FilePath:   filePath,
+					Line:       line,
+				})
+			}
+		}
+		return edges
+	}
+
+	// Simple import: use crate::module::Name
+	path := match[1]
+	parts := strings.Split(path, "::")
+	targetName := parts[len(parts)-1]
+	if targetName == "" {
+		targetName = path
+	}
+
+	return []ParsedEdge{
+		{
+			SourceName: "",
+			TargetName: targetName,
+			Kind:       "imports",
+			FilePath:   filePath,
+			Line:       line,
+		},
+	}
+}
+
+func parseRustCall(m AstGrepMatch, filePath string) *ParsedEdge {
+	match := rustCallNameRe.FindStringSubmatch(m.Text)
+	if match == nil {
+		return nil
+	}
+
+	calledName := match[1]
+	if isRustBuiltinCall(calledName) {
+		return nil
+	}
+
+	return &ParsedEdge{
+		SourceName: "",
+		TargetName: calledName,
+		Kind:       "calls",
+		FilePath:   filePath,
+		Line:       m.Range.Start.Line + 1,
+	}
+}
+
+// isRustBuiltinCall returns true for Rust built-in/macro calls that shouldn't be edges.
+func isRustBuiltinCall(name string) bool {
+	builtins := map[string]bool{
+		"println":       true,
+		"print":         true,
+		"eprintln":      true,
+		"eprint":        true,
+		"vec":           true,
+		"format":        true,
+		"assert":        true,
+		"assert_eq":     true,
+		"assert_ne":     true,
+		"panic":         true,
+		"todo":          true,
+		"unimplemented": true,
+		"unreachable":   true,
+		"dbg":           true,
+		"write":         true,
+		"writeln":       true,
+		"Some":          true,
+		"None":          true,
+		"Ok":            true,
+		"Err":           true,
 	}
 	return builtins[name]
 }

@@ -1,101 +1,169 @@
 # codeindex
 
-> Scaffolded with [create-01x-project](https://github.com/yourusername/create-01x-project).
-> A Claude Code multi-agent build system — from product idea to shipped code.
+A persistent structural knowledge graph for codebases. Lets AI coding agents and developers query symbols, references, and call chains via MCP tools and a CLI tree explorer — instead of reading raw files.
+
+Built on [ast-grep](https://ast-grep.github.io) for tree-sitter parsing, [SQLite](https://sqlite.org) for the graph store.
 
 ---
 
-## How to Use
+## Install
 
-### Step 1 — Fill in the product seed
+### Homebrew (macOS / Linux)
 
-Open `agent_docs/product-seed.md` and describe your product.
-This is the only file you write manually. Be specific — the agents
-read this and produce everything else from it.
-
-### Step 2 — Open in VSCode and run Claude Code
-
-Open this folder in VSCode. Then open Claude Code and type:
-
-```
-Run the orchestrator agent.
+```sh
+brew install 01x-in/tap/codeindex
 ```
 
-Claude Code finds `.claude/agents/orchestrator.md` automatically
-from your open workspace — no imports, no config needed.
+### go install
 
-### Step 3 — Approve the gates
-
-The orchestrator runs planning agents in parallel, then a review
-agent that cross-checks everything. It stops at two human gates
-before writing any code:
-
-```
-✅ PLANNING COMPLETE — GATE 1
-→ Read agent_docs/review-notes.md, then type: proceed with scaffold
-
-✅ SCAFFOLD COMPLETE — GATE 2
-→ Check agent_docs/build/scaffold-report.md, then type: proceed with milestone 1
+```sh
+go install github.com/01x-in/codeindex/cmd/codeindex@latest
 ```
 
-### Step 4 — Build
+### npx (no install)
 
-The build loop runs story by story — build → test → review → fix —
-committing as it goes. At the end of each milestone the orchestrator
-opens a PR and runs the pr-review-agent to fix any bot review comments
-before showing you the next gate.
-
-**Your total keyboard input for a full build:**
-
+```sh
+npx codeindex init
 ```
-Run the orchestrator agent.
-proceed with scaffold
-proceed with milestone 1
-proceed with milestone 2
+
+Downloads the correct binary for your platform on first run, caches it locally.
+
+### Prerequisites
+
+codeindex requires **ast-grep** in your PATH:
+
+```sh
+brew install ast-grep          # macOS
+cargo install ast-grep         # via Cargo
+npm install -g @ast-grep/cli   # via npm
 ```
 
 ---
 
-## The Agents
+## Quick start
 
-| Agent | Phase | Role |
-|---|---|---|
-| orchestrator | — | Master conductor. The only one you invoke. |
-| system-design-agent | 1 | Technical blueprint |
-| milestone-agent | 1 | Delivery plan |
-| user-stories-agent | 1 | Stories with acceptance criteria and edge cases |
-| product-brief-agent | 1 | Product positioning and personas |
-| review-agent | 2 | Cross-checks all 4 planning docs for alignment |
-| architect-agent | 0 | Scaffolds repo, installs packages, sets up infra |
-| build-agent | 3 | TDD implementation — tests first, then code |
-| test-agent | 3 | Runs test suite and reports results |
-| build-review-agent | 3 | Code review — issues PASS or NEEDS FIX |
-| cache-health-agent | utility | Diagnoses slow or expensive sessions |
-| pr-review-agent | 4 | Fixes PR bot comments, replies, resolves threads |
+```sh
+# In any repo
+codeindex init        # auto-detect languages, write .codeindex.yaml, run initial index
+codeindex status      # check index health
+codeindex reindex     # re-index stale files
 
----
+# Query
+codeindex tree handleRequest              # interactive tree explorer
+codeindex tree --file src/api/handler.ts  # file structure outline
 
-## PR Review Loop
-
-After each milestone, the orchestrator opens a PR and spawns the
-pr-review-agent automatically. It:
-- Polls for comments from Entelligence, CodeRabbit, Codex, or human reviewers
-- Fixes actionable issues (up to 3 cycles)
-- Replies to each thread with the fix commit SHA
-- Resolves the conversation thread via GitHub GraphQL API
-- Verifies tests pass before pushing
-
-**Requires:** `gh` CLI authenticated + a PR review bot configured on the repo.
-**Manual invocation:** type `/fix-pr-review` or `Run the pr-review-agent.`
+# MCP server (for AI agents)
+codeindex serve
+```
 
 ---
 
-## Session Tips
+## Supported languages
 
-- Run `/compact` at ~70% context — not `/clear`.
-- Stay in the same session across stories within a milestone.
-- If sessions feel slow: `Run the cache-health-agent.`
+| Language | Detection marker |
+|----------|-----------------|
+| TypeScript / JavaScript | `package.json`, `tsconfig.json` |
+| Go | `go.mod` |
+| Python | `pyproject.toml`, `setup.py` |
+| Rust | `Cargo.toml` |
 
 ---
 
-*Built by the 01x — [01x.in](https://01x.in)*
+## MCP agent integration
+
+Add to your agent's MCP config:
+
+```json
+{
+  "mcpServers": {
+    "codeindex": {
+      "command": "codeindex",
+      "args": ["serve"]
+    }
+  }
+}
+```
+
+### Available MCP tools
+
+| Tool | Description |
+|------|-------------|
+| `get_file_structure` | Structural skeleton of a file (exports, functions, classes, types) |
+| `find_symbol` | Locate where any symbol is defined across the codebase |
+| `get_references` | Every file and line that uses a given symbol |
+| `get_callers` | Trace the call graph upstream from a function (configurable depth) |
+| `get_subgraph` | Bounded neighborhood around a symbol — up to N hops |
+| `reindex` | Trigger re-indexing of a file or the full repo |
+
+All responses include a `stale` flag so the agent knows when to reindex.
+
+---
+
+## CLI reference
+
+```
+codeindex init [--yes]                    Auto-detect languages, create config
+codeindex reindex [<file>] [--watch]      Re-index stale files or watch for changes
+codeindex status [--json]                 Index health summary
+codeindex serve                           Start MCP stdio server
+codeindex tree <symbol> [--json]          Interactive TUI tree explorer
+codeindex tree --file <path>              File structure tree
+codeindex version                         Print version
+```
+
+### Watch mode
+
+```sh
+codeindex reindex --watch   # auto-reindex on file save (fsnotify, 100ms debounce)
+```
+
+---
+
+## Config (`.codeindex.yaml`)
+
+```yaml
+version: 1
+languages:
+  - typescript
+  - go
+ignore:
+  - node_modules
+  - vendor
+  - .git
+  - dist
+query_primitives:
+  - get_file_structure
+  - find_symbol
+  - get_references
+  - get_callers
+  - get_subgraph
+  - reindex
+index_path: .codeindex
+```
+
+---
+
+## Agent skills
+
+Install the codeindex skill for your AI agent (instructs it when to call `get_file_structure`, when to `reindex`, how to read the `stale` flag):
+
+```sh
+npx skills add 01x-in/codeindex-skills
+```
+
+Supports Claude Code, Cursor, Codex, and 16+ other agents via [skills.sh](https://skills.sh).
+
+---
+
+## Exit codes
+
+| Code | Meaning |
+|------|---------|
+| 0 | Success |
+| 1 | General error |
+| 2 | Config error (missing or invalid `.codeindex.yaml`) |
+| 3 | ast-grep not found in PATH |
+
+---
+
+*Built by [01x](https://01x.in)*

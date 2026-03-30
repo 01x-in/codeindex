@@ -1,5 +1,10 @@
+# Agent / build system (local only, not for public repo)
+.claude/
+CLAUDE.md
+agent_docs/
+
 # Build artifacts
-bin/
+/bin/
 dist/
 /build/
 
@@ -34,4 +39,7 @@ node_modules/
 # Test
 coverage.out
 coverage.html
-codeindex
+
+# Built binary at repo root (from go build without -o)
+/codeindex
+/codeindex.exe
