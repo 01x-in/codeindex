@@ -1,15 +1,19 @@
 package cli
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 	"time"
 
 	"github.com/01x/codeindex/internal/config"
 	"github.com/01x/codeindex/internal/graph"
 	"github.com/01x/codeindex/internal/indexer"
+	"github.com/01x/codeindex/internal/watcher"
 	"github.com/spf13/cobra"
 )
 
@@ -70,6 +74,12 @@ func runReindex(cmd *cobra.Command, args []string) error {
 
 	if err := store.Migrate(); err != nil {
 		return fmt.Errorf("migrating schema: %w", err)
+	}
+
+	// Watch mode.
+	watchFlag, _ := cmd.Flags().GetBool("watch")
+	if watchFlag {
+		return runWatch(cmd, dir, cfg, store)
 	}
 
 	start := time.Now()
@@ -172,6 +182,55 @@ func reindexAll(cmd *cobra.Command, dir string, cfg config.Config, store *graph.
 		}
 	}
 
+	return nil
+}
+
+// runWatch starts the fsnotify-based watch mode, auto-reindexing on file save.
+func runWatch(cmd *cobra.Command, dir string, cfg config.Config, store *graph.SQLiteStore) error {
+	runner := indexer.NewSubprocessRunner()
+
+	fmt.Fprintln(cmd.OutOrStdout(), "Watching for changes... (Ctrl+C to stop)")
+
+	onChange := func(absPath string) {
+		lang := languageForFile(absPath, cfg.Languages)
+		if lang == "" {
+			return
+		}
+
+		start := time.Now()
+		idx := indexer.NewIndexer(store, runner, dir, lang)
+		result, err := idx.IndexFile(absPath)
+		duration := time.Since(start)
+
+		if err != nil {
+			fmt.Fprintf(cmd.OutOrStdout(), "  error reindexing %s: %v\n", absPath, err)
+			return
+		}
+
+		fmt.Fprintf(cmd.OutOrStdout(), "  -> Reindexed %s in %dms (+%d nodes, +%d edges)\n",
+			result.FilePath, duration.Milliseconds(), result.NodeCount, result.EdgeCount)
+	}
+
+	w, err := watcher.New(dir, cfg, onChange)
+	if err != nil {
+		return fmt.Errorf("creating watcher: %w", err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Handle SIGINT / SIGTERM for graceful shutdown.
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-sigCh
+		fmt.Fprintln(cmd.OutOrStdout(), "\nStopping watcher...")
+		cancel()
+	}()
+
+	if err := w.Start(ctx); err != nil && err != context.Canceled {
+		return fmt.Errorf("watcher error: %w", err)
+	}
 	return nil
 }
 
