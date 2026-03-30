@@ -48,6 +48,13 @@ var (
 	// Go type discriminator patterns (support generics with type params).
 	goStructRe    = regexp.MustCompile(`\bstruct\s*\{`)
 	goInterfaceRe = regexp.MustCompile(`\binterface\s*\{`)
+
+	// Python-specific patterns.
+	pyFuncNameRe   = regexp.MustCompile(`def\s+(\w+)\s*\(`)
+	pyClassNameRe  = regexp.MustCompile(`class\s+(\w+)`)
+	pyImportNameRe = regexp.MustCompile(`^import\s+(\S+)`)
+	pyFromImportRe = regexp.MustCompile(`from\s+(\S+)\s+import`)
+	pyCallNameRe   = regexp.MustCompile(`^(\w+(?:\.\w+)*)\s*\(`)
 )
 
 // nodeRuleIDs are the rule IDs that produce nodes (symbol definitions).
@@ -133,6 +140,30 @@ func ParseMatches(matches []AstGrepMatch, filePath string, language string) Pars
 
 		case "go-call-expr":
 			if edge := parseGoCall(m, filePath); edge != nil {
+				result.Edges = append(result.Edges, *edge)
+			}
+
+		// Python rules.
+		case "python-func-def":
+			if node := parsePythonFuncDef(m, filePath, language); node != nil {
+				result.Nodes = append(result.Nodes, *node)
+			}
+
+		case "python-class-def":
+			if node := parsePythonClassDef(m, filePath, language); node != nil {
+				result.Nodes = append(result.Nodes, *node)
+			}
+
+		case "python-import":
+			edges := parsePythonImport(m, filePath)
+			result.Edges = append(result.Edges, edges...)
+
+		case "python-from-import":
+			edges := parsePythonFromImport(m, filePath)
+			result.Edges = append(result.Edges, edges...)
+
+		case "python-call-expr":
+			if edge := parsePythonCall(m, filePath); edge != nil {
 				result.Edges = append(result.Edges, *edge)
 			}
 		}
@@ -626,6 +657,176 @@ func isBuiltinCall(name string) bool {
 		"Promise.resolve": true,
 		"Promise.reject":  true,
 		"Promise.all":     true,
+	}
+	return builtins[name]
+}
+
+// --- Python parsers ---
+
+func parsePythonFuncDef(m AstGrepMatch, filePath string, language string) *graph.Node {
+	match := pyFuncNameRe.FindStringSubmatch(m.Text)
+	if match == nil {
+		return nil
+	}
+
+	name := match[1]
+	exported := !strings.HasPrefix(name, "_")
+
+	return &graph.Node{
+		Name:      name,
+		Kind:      "fn",
+		FilePath:  filePath,
+		LineStart: m.Range.Start.Line + 1,
+		LineEnd:   m.Range.End.Line + 1,
+		ColStart:  m.Range.Start.Column,
+		ColEnd:    m.Range.End.Column,
+		Exported:  exported,
+		Language:  language,
+	}
+}
+
+func parsePythonClassDef(m AstGrepMatch, filePath string, language string) *graph.Node {
+	match := pyClassNameRe.FindStringSubmatch(m.Text)
+	if match == nil {
+		return nil
+	}
+
+	name := match[1]
+	exported := !strings.HasPrefix(name, "_")
+
+	return &graph.Node{
+		Name:      name,
+		Kind:      "class",
+		FilePath:  filePath,
+		LineStart: m.Range.Start.Line + 1,
+		LineEnd:   m.Range.End.Line + 1,
+		ColStart:  m.Range.Start.Column,
+		ColEnd:    m.Range.End.Column,
+		Exported:  exported,
+		Language:  language,
+	}
+}
+
+func parsePythonImport(m AstGrepMatch, filePath string) []ParsedEdge {
+	// "import foo" or "import foo.bar" or "import foo, bar"
+	text := strings.TrimSpace(m.Text)
+	// Strip "import " prefix and split by comma.
+	withoutKeyword := strings.TrimPrefix(text, "import ")
+	parts := strings.Split(withoutKeyword, ",")
+
+	var edges []ParsedEdge
+	for _, part := range parts {
+		name := strings.TrimSpace(part)
+		if name == "" {
+			continue
+		}
+		// For dotted imports (foo.bar), use the top-level module.
+		segments := strings.Split(name, ".")
+		targetName := segments[0]
+
+		edges = append(edges, ParsedEdge{
+			SourceName: "",
+			TargetName: targetName,
+			Kind:       "imports",
+			FilePath:   filePath,
+			Line:       m.Range.Start.Line + 1,
+		})
+	}
+	return edges
+}
+
+func parsePythonFromImport(m AstGrepMatch, filePath string) []ParsedEdge {
+	// "from foo import bar, baz" or "from foo.bar import Baz"
+	text := strings.TrimSpace(m.Text)
+
+	fromMatch := pyFromImportRe.FindStringSubmatch(text)
+	if fromMatch == nil {
+		return nil
+	}
+	_ = fromMatch[1] // module path — available for future resolution
+
+	// Extract imported names after "import".
+	importIdx := strings.Index(text, " import ")
+	if importIdx < 0 {
+		return nil
+	}
+	namesPart := strings.TrimSpace(text[importIdx+8:])
+	// Strip parentheses if present.
+	namesPart = strings.Trim(namesPart, "()")
+
+	var edges []ParsedEdge
+	for _, name := range strings.Split(namesPart, ",") {
+		name = strings.TrimSpace(name)
+		if name == "" || name == "*" {
+			continue
+		}
+		// Handle "Name as Alias".
+		parts := strings.Fields(name)
+		targetName := parts[0]
+
+		edges = append(edges, ParsedEdge{
+			SourceName: "",
+			TargetName: targetName,
+			Kind:       "imports",
+			FilePath:   filePath,
+			Line:       m.Range.Start.Line + 1,
+		})
+	}
+	return edges
+}
+
+func parsePythonCall(m AstGrepMatch, filePath string) *ParsedEdge {
+	match := pyCallNameRe.FindStringSubmatch(m.Text)
+	if match == nil {
+		return nil
+	}
+
+	calledName := match[1]
+	if isPythonBuiltinCall(calledName) {
+		return nil
+	}
+
+	return &ParsedEdge{
+		SourceName: "",
+		TargetName: calledName,
+		Kind:       "calls",
+		FilePath:   filePath,
+		Line:       m.Range.Start.Line + 1,
+	}
+}
+
+// isPythonBuiltinCall returns true for Python built-in calls that shouldn't be edges.
+func isPythonBuiltinCall(name string) bool {
+	builtins := map[string]bool{
+		"print":      true,
+		"len":        true,
+		"range":      true,
+		"str":        true,
+		"int":        true,
+		"float":      true,
+		"bool":       true,
+		"list":       true,
+		"dict":       true,
+		"set":        true,
+		"tuple":      true,
+		"type":       true,
+		"isinstance": true,
+		"issubclass": true,
+		"hasattr":    true,
+		"getattr":    true,
+		"setattr":    true,
+		"super":      true,
+		"enumerate":  true,
+		"zip":        true,
+		"map":        true,
+		"filter":     true,
+		"sorted":     true,
+		"reversed":   true,
+		"open":       true,
+		"repr":       true,
+		"vars":       true,
+		"dir":        true,
+		"id":         true,
 	}
 	return builtins[name]
 }

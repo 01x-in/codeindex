@@ -66,8 +66,35 @@ language: Go
 rule:
   kind: call_expression`
 
+// PythonRules is the inline rules YAML for Python symbol extraction.
+const PythonRules = `id: python-func-def
+language: Python
+rule:
+  kind: function_definition
+---
+id: python-class-def
+language: Python
+rule:
+  kind: class_definition
+---
+id: python-import
+language: Python
+rule:
+  kind: import_statement
+---
+id: python-from-import
+language: Python
+rule:
+  kind: import_from_statement
+---
+id: python-call-expr
+language: Python
+rule:
+  kind: call`
+
 // LanguageRules maps language names to their inline rule strings.
 var LanguageRules = map[string]string{
 	"typescript": TypeScriptRules,
 	"go":         GoRules,
+	"python":     PythonRules,
 }
