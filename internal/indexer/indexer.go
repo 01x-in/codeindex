@@ -393,6 +393,13 @@ func (idx *Indexer) findFiles() ([]string, error) {
 
 // languageExtensions returns the file extensions for a language.
 func languageExtensions(language string) []string {
+	return LanguageExtensions(language)
+}
+
+// LanguageExtensions returns the file extensions for a language.
+// It is exported so other packages (e.g. watcher) can reuse the same mapping
+// instead of duplicating it.
+func LanguageExtensions(language string) []string {
 	switch language {
 	case "typescript":
 		return []string{".ts", ".tsx"}

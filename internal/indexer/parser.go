@@ -62,7 +62,7 @@ var (
 	rustStructNameRe = regexp.MustCompile(`(?:pub\s+)?struct\s+(\w+)`)
 	rustEnumNameRe   = regexp.MustCompile(`(?:pub\s+)?enum\s+(\w+)`)
 	rustTraitNameRe  = regexp.MustCompile(`(?:pub\s+)?trait\s+(\w+)`)
-	rustUsePathRe    = regexp.MustCompile(`use\s+([\w:]+)`)
+	rustUsePathRe    = regexp.MustCompile(`use\s+([\w:]+)(?:::\{([^}]+)\})?`)
 	rustCallNameRe   = regexp.MustCompile(`^(\w+(?:::\w+)*)\s*(?:::<[^>]*)?\s*\(`)
 )
 
@@ -957,7 +957,31 @@ func parseRustUse(m AstGrepMatch, filePath string) []ParsedEdge {
 		return nil
 	}
 
-	// Use the last segment of the path as the target name.
+	line := m.Range.Start.Line + 1
+
+	// Grouped import: use crate::module::{Name1, Name2}
+	if match[2] != "" {
+		var edges []ParsedEdge
+		for _, item := range strings.Split(match[2], ",") {
+			name := strings.TrimSpace(item)
+			// Handle aliased imports: SomeName as Alias
+			if idx := strings.Index(name, " as "); idx >= 0 {
+				name = strings.TrimSpace(name[idx+4:])
+			}
+			if name != "" && name != "_" {
+				edges = append(edges, ParsedEdge{
+					SourceName: "",
+					TargetName: name,
+					Kind:       "imports",
+					FilePath:   filePath,
+					Line:       line,
+				})
+			}
+		}
+		return edges
+	}
+
+	// Simple import: use crate::module::Name
 	path := match[1]
 	parts := strings.Split(path, "::")
 	targetName := parts[len(parts)-1]
@@ -971,7 +995,7 @@ func parseRustUse(m AstGrepMatch, filePath string) []ParsedEdge {
 			TargetName: targetName,
 			Kind:       "imports",
 			FilePath:   filePath,
-			Line:       m.Range.Start.Line + 1,
+			Line:       line,
 		},
 	}
 }

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/01x/codeindex/internal/config"
+	"github.com/01x/codeindex/internal/indexer"
 	"github.com/fsnotify/fsnotify"
 )
 
@@ -29,7 +30,7 @@ type Watcher struct {
 // debounce window) for each changed file that matches a configured language
 // and is not under an ignored directory.
 func New(dir string, cfg config.Config, onChange func(path string)) (*Watcher, error) {
-	exts := buildExtSet(cfg.Languages)
+	exts := buildExtSet(cfg.Languages, indexer.LanguageExtensions)
 	return &Watcher{
 		dir:      dir,
 		cfg:      cfg,
@@ -169,17 +170,13 @@ func (w *Watcher) isIgnored(path string) bool {
 }
 
 // buildExtSet builds a set of file extensions to watch for the given languages.
-func buildExtSet(languages []string) map[string]bool {
-	extMap := map[string][]string{
-		"typescript": {".ts", ".tsx", ".js", ".jsx"},
-		"go":         {".go"},
-		"python":     {".py"},
-		"rust":       {".rs"},
-	}
-
+// extsFn is injected so callers can substitute indexer.LanguageExtensions (or a
+// test double) without coupling watcher directly to the indexer package at the
+// call site.
+func buildExtSet(languages []string, extsFn func(string) []string) map[string]bool {
 	exts := make(map[string]bool)
 	for _, lang := range languages {
-		for _, ext := range extMap[lang] {
+		for _, ext := range extsFn(lang) {
 			exts[ext] = true
 		}
 	}
