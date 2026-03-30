@@ -148,6 +148,47 @@ func (s *Server) handleToolsList(req JSONRPCRequest) JSONRPCResponse {
 			},
 		},
 		{
+			Name:        "get_callers",
+			Description: "Trace the call graph upstream from a function. Returns caller chain with depth, file paths, and line numbers.",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"symbol": map[string]interface{}{
+						"type":        "string",
+						"description": "Function name to trace callers for",
+					},
+					"depth": map[string]interface{}{
+						"type":        "number",
+						"description": "Max traversal depth (default 3, max 10)",
+					},
+				},
+				"required": []string{"symbol"},
+			},
+		},
+		{
+			Name:        "get_subgraph",
+			Description: "Retrieve a bounded neighborhood of the knowledge graph around a symbol. Returns nodes and edges within the specified depth.",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"symbol": map[string]interface{}{
+						"type":        "string",
+						"description": "Symbol name to center the subgraph on",
+					},
+					"depth": map[string]interface{}{
+						"type":        "number",
+						"description": "Max traversal depth (default 2, max 10)",
+					},
+					"edge_kinds": map[string]interface{}{
+						"type":        "array",
+						"items":       map[string]interface{}{"type": "string"},
+						"description": "Optional filter: calls, imports, implements, extends, references",
+					},
+				},
+				"required": []string{"symbol"},
+			},
+		},
+		{
 			Name:        "reindex",
 			Description: "Trigger re-indexing of a specific file or the full repo.",
 			InputSchema: map[string]interface{}{
@@ -206,6 +247,10 @@ func (s *Server) HandleToolCall(params ToolCallParams) (ToolResult, error) {
 		return s.toolFindSymbol(params, start)
 	case "get_references":
 		return s.toolGetReferences(params, start)
+	case "get_callers":
+		return s.toolGetCallers(params, start)
+	case "get_subgraph":
+		return s.toolGetSubgraph(params, start)
 	case "reindex":
 		return s.toolReindex(params, start)
 	default:
@@ -271,6 +316,64 @@ func (s *Server) toolGetReferences(params ToolCallParams, start time.Time) (Tool
 		"symbol":     symbol,
 		"references": results,
 		"metadata":   meta,
+	})
+}
+
+func (s *Server) toolGetCallers(params ToolCallParams, start time.Time) (ToolResult, error) {
+	symbol, ok := params.Arguments["symbol"].(string)
+	if !ok || symbol == "" {
+		return problemResult("https://codeindex.dev/errors/invalid-params", "Invalid Parameters", 400, "symbol is required"), nil
+	}
+
+	depth := 3 // default
+	if d, ok := params.Arguments["depth"].(float64); ok {
+		depth = int(d)
+	}
+
+	results, meta, err := s.engine.GetCallers(symbol, depth)
+	if err != nil {
+		return ToolResult{}, err
+	}
+
+	meta.QueryDurationMs = time.Since(start).Milliseconds()
+	return toolResultJSON(map[string]interface{}{
+		"symbol":   symbol,
+		"callers":  results,
+		"metadata": meta,
+	})
+}
+
+func (s *Server) toolGetSubgraph(params ToolCallParams, start time.Time) (ToolResult, error) {
+	symbol, ok := params.Arguments["symbol"].(string)
+	if !ok || symbol == "" {
+		return problemResult("https://codeindex.dev/errors/invalid-params", "Invalid Parameters", 400, "symbol is required"), nil
+	}
+
+	depth := 2 // default
+	if d, ok := params.Arguments["depth"].(float64); ok {
+		depth = int(d)
+	}
+
+	var edgeKinds []string
+	if ek, ok := params.Arguments["edge_kinds"].([]interface{}); ok {
+		for _, k := range ek {
+			if s, ok := k.(string); ok {
+				edgeKinds = append(edgeKinds, s)
+			}
+		}
+	}
+
+	result, meta, err := s.engine.GetSubgraph(symbol, depth, edgeKinds)
+	if err != nil {
+		return ToolResult{}, err
+	}
+
+	meta.QueryDurationMs = time.Since(start).Milliseconds()
+	return toolResultJSON(map[string]interface{}{
+		"symbol":   symbol,
+		"nodes":    result.Nodes,
+		"edges":    result.Edges,
+		"metadata": meta,
 	})
 }
 

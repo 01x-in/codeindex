@@ -191,3 +191,154 @@ func TestStaleFlagInResults(t *testing.T) {
 	assert.True(t, results[0].Stale, "modified file should be flagged as stale")
 	assert.Contains(t, meta.StaleFiles, "src/handler.ts")
 }
+
+// === GetCallers tests (M4-S1) ===
+
+func TestGetCallers_BasicChain(t *testing.T) {
+	engine, store, dir := setupQueryEngine(t)
+	populateTestGraph(t, store, dir)
+
+	// formatDate is called by handleRequest.
+	callers, meta, err := engine.GetCallers("formatDate", 3)
+	require.NoError(t, err)
+	assert.Len(t, callers, 1)
+	assert.Equal(t, "handleRequest", callers[0].Name)
+	assert.Equal(t, "fn", callers[0].Kind)
+	assert.Equal(t, "src/handler.ts", callers[0].File)
+	assert.Equal(t, 1, callers[0].Depth)
+	assert.False(t, callers[0].Stale)
+	assert.Empty(t, meta.StaleFiles)
+}
+
+func TestGetCallers_DeepChain(t *testing.T) {
+	engine, store, dir := setupQueryEngine(t)
+
+	// Build a chain: d -> c -> b -> a
+	os.MkdirAll(filepath.Join(dir, "src"), 0755)
+	for _, name := range []string{"a.ts", "b.ts", "c.ts", "d.ts"} {
+		content := []byte("function " + name)
+		os.WriteFile(filepath.Join(dir, "src/"+name), content, 0644)
+		store.SetFileMetadata(graph.FileMetadata{
+			FilePath: "src/" + name, ContentHash: hash.Bytes(content),
+			Language: "typescript", NodeCount: 1, IndexStatus: "ok",
+		})
+	}
+
+	idA, _ := store.UpsertNode(graph.Node{Name: "funcA", Kind: "fn", FilePath: "src/a.ts", LineStart: 1, LineEnd: 5, Language: "typescript"})
+	idB, _ := store.UpsertNode(graph.Node{Name: "funcB", Kind: "fn", FilePath: "src/b.ts", LineStart: 1, LineEnd: 5, Language: "typescript"})
+	idC, _ := store.UpsertNode(graph.Node{Name: "funcC", Kind: "fn", FilePath: "src/c.ts", LineStart: 1, LineEnd: 5, Language: "typescript"})
+	idD, _ := store.UpsertNode(graph.Node{Name: "funcD", Kind: "fn", FilePath: "src/d.ts", LineStart: 1, LineEnd: 5, Language: "typescript"})
+
+	store.UpsertEdge(graph.Edge{SourceID: idB, TargetID: idA, Kind: "calls", FilePath: "src/b.ts", Line: 3})
+	store.UpsertEdge(graph.Edge{SourceID: idC, TargetID: idB, Kind: "calls", FilePath: "src/c.ts", Line: 3})
+	store.UpsertEdge(graph.Edge{SourceID: idD, TargetID: idC, Kind: "calls", FilePath: "src/d.ts", Line: 3})
+
+	// Depth 2: should find funcB (depth 1) and funcC (depth 2), but NOT funcD.
+	callers, _, err := engine.GetCallers("funcA", 2)
+	require.NoError(t, err)
+	assert.Len(t, callers, 2)
+
+	nameSet := map[string]int{}
+	for _, c := range callers {
+		nameSet[c.Name] = c.Depth
+	}
+	assert.Equal(t, 1, nameSet["funcB"])
+	assert.Equal(t, 2, nameSet["funcC"])
+	_, hasFuncD := nameSet["funcD"]
+	assert.False(t, hasFuncD, "funcD should not appear at depth 2")
+
+	// Depth 3: should find all three.
+	callers3, _, err := engine.GetCallers("funcA", 3)
+	require.NoError(t, err)
+	assert.Len(t, callers3, 3)
+}
+
+func TestGetCallers_CycleDetection(t *testing.T) {
+	engine, store, dir := setupQueryEngine(t)
+
+	// Build a cycle: a -> b -> c -> a
+	os.MkdirAll(filepath.Join(dir, "src"), 0755)
+	for _, name := range []string{"a.ts", "b.ts", "c.ts"} {
+		content := []byte("function " + name)
+		os.WriteFile(filepath.Join(dir, "src/"+name), content, 0644)
+		store.SetFileMetadata(graph.FileMetadata{
+			FilePath: "src/" + name, ContentHash: hash.Bytes(content),
+			Language: "typescript", NodeCount: 1, IndexStatus: "ok",
+		})
+	}
+
+	idA, _ := store.UpsertNode(graph.Node{Name: "cycleA", Kind: "fn", FilePath: "src/a.ts", LineStart: 1, LineEnd: 5, Language: "typescript"})
+	idB, _ := store.UpsertNode(graph.Node{Name: "cycleB", Kind: "fn", FilePath: "src/b.ts", LineStart: 1, LineEnd: 5, Language: "typescript"})
+	idC, _ := store.UpsertNode(graph.Node{Name: "cycleC", Kind: "fn", FilePath: "src/c.ts", LineStart: 1, LineEnd: 5, Language: "typescript"})
+
+	// a calls b, b calls c, c calls a (cycle)
+	store.UpsertEdge(graph.Edge{SourceID: idA, TargetID: idB, Kind: "calls", FilePath: "src/a.ts", Line: 2})
+	store.UpsertEdge(graph.Edge{SourceID: idB, TargetID: idC, Kind: "calls", FilePath: "src/b.ts", Line: 2})
+	store.UpsertEdge(graph.Edge{SourceID: idC, TargetID: idA, Kind: "calls", FilePath: "src/c.ts", Line: 2})
+
+	// GetCallers for cycleB — who calls cycleB? → cycleA calls cycleB. Then who calls cycleA? → cycleC calls cycleA.
+	// Then who calls cycleC? → cycleB calls cycleC, but cycleB is the starting node (visited), so stop.
+	callers, _, err := engine.GetCallers("cycleB", 10)
+	require.NoError(t, err)
+
+	// Should not infinite loop; should have at most 2 results (cycleA, cycleC).
+	assert.LessOrEqual(t, len(callers), 2)
+	nameSet := map[string]bool{}
+	for _, c := range callers {
+		nameSet[c.Name] = true
+	}
+	assert.True(t, nameSet["cycleA"], "cycleA should appear as a caller of cycleB")
+}
+
+func TestGetCallers_NotFound(t *testing.T) {
+	engine, store, dir := setupQueryEngine(t)
+	populateTestGraph(t, store, dir)
+
+	callers, _, err := engine.GetCallers("nonexistent", 3)
+	require.NoError(t, err)
+	assert.Len(t, callers, 0)
+}
+
+func TestGetCallers_NoCaller(t *testing.T) {
+	engine, store, dir := setupQueryEngine(t)
+	populateTestGraph(t, store, dir)
+
+	// handleRequest has no callers in the test graph.
+	callers, _, err := engine.GetCallers("handleRequest", 3)
+	require.NoError(t, err)
+	assert.Len(t, callers, 0)
+}
+
+func TestGetCallers_DefaultDepth(t *testing.T) {
+	engine, store, dir := setupQueryEngine(t)
+	populateTestGraph(t, store, dir)
+
+	// Passing 0 should use default depth (3).
+	callers, _, err := engine.GetCallers("formatDate", 0)
+	require.NoError(t, err)
+	assert.Len(t, callers, 1) // handleRequest at depth 1
+}
+
+func TestGetCallers_StaleCaller(t *testing.T) {
+	engine, store, dir := setupQueryEngine(t)
+	populateTestGraph(t, store, dir)
+
+	// Make handler.ts stale.
+	os.WriteFile(filepath.Join(dir, "src/handler.ts"), []byte("// modified"), 0644)
+
+	callers, meta, err := engine.GetCallers("formatDate", 3)
+	require.NoError(t, err)
+	assert.Len(t, callers, 1)
+	assert.True(t, callers[0].Stale, "stale caller should be flagged")
+	assert.Contains(t, meta.StaleFiles, "src/handler.ts")
+}
+
+func TestGetCallers_MaxDepthClamped(t *testing.T) {
+	engine, store, dir := setupQueryEngine(t)
+	populateTestGraph(t, store, dir)
+
+	// Depth > 10 should be clamped to 10 and not panic.
+	callers, _, err := engine.GetCallers("formatDate", 100)
+	require.NoError(t, err)
+	assert.Len(t, callers, 1) // Still just handleRequest
+}
