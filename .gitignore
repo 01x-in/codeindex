@@ -43,3 +43,4 @@ coverage.html
 # Built binary at repo root (from go build without -o)
 /codeindex
 /codeindex.exe
+.codeindex.yaml
