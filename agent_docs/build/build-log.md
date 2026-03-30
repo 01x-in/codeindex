@@ -66,10 +66,6 @@
 | M3-S4 | skills.sh repo structure (skills.json, README.md) | f2ea69c |
 | M3-S5 | Skill installation validation tests (JSON validity, consistency, prereqs) | f5215f5 |
 
-### Test Count
-- 32 skill-specific tests, all passing
-- Tests cover: file existence, MCP tool mentions, workflow instructions, stale flag explanation, binary name correctness, skills.json validity, cross-skill consistency, prerequisite checks
-
 ### Notes
 - skills.sh external repo publishing requires human action (create GitHub repo, register with skills.sh)
 - All skill files use `codeindex` (no hyphen) consistently
@@ -79,7 +75,7 @@
 - Date: 2026-03-29
 - Branch: milestone/4
 - Status: COMPLETE
-- PR: #5 (open, review fixes applied)
+- PR: #5 (merged)
 
 ### Stories Completed
 | ID | Description | Commit |
@@ -96,16 +92,45 @@
 | Duplicate case/method definitions in server.go (compile error) | Removed duplicate tool defs, switch cases, methods | 1e1e354 |
 | type_declaration matches whole grouped block, not individual types | Changed rule to type_spec for per-type matching | 61047a8 |
 | Generic Go declarations (func Map[T]..., type Set[T]...) not parsed | Updated regexes to handle type parameters | 61047a8 |
+| goTypeNameRe missing `type\s+` anchor causing false positives | Restored type\s+ prefix | (M5 branch) |
+| testdata generateID() hardcoded "id-001" causing map overwrites | Replaced with atomic counter | (M5 branch) |
 
 ### Test Count
 - All tests passing, race detector clean
-- Go parser tests: 14 (function, method, struct, interface, import, call, builtin filter, export detection, type alias, grouped types, generic function, generic type)
-- Go integration tests: 4 (mock runner, single file, index all, method scope)
-- MCP tests: 16 (including get_callers and get_subgraph handlers)
+- Go parser tests: 14, Go integration tests: 4, MCP tests: 16
 
 ### Notes
 - Go ast-grep rules use type_spec (not type_declaration) for individual type matching in grouped blocks
 - Go export detection via unicode.IsUpper on first character (Go convention)
-- Method receiver type stored as scope field for graph traversal
 - CTE-based traversal for get_callers and get_subgraph avoids N+1 queries
 - Generic Go support: regexes handle type params in func/type declarations
+
+## Milestone 5: Watch Mode + Polish
+- Date: 2026-03-30
+- Branch: milestone/5
+- Status: COMPLETE
+
+### Stories Completed
+| ID | Description | Commit |
+|----|-------------|--------|
+| M5-S1 | `reindex --watch` with fsnotify (debounce, ignore paths, language filtering) | 14428c9 |
+| M5-S2 | Python language support (ast-grep rules, parser, fixture, tests) | 0202b20 |
+| M5-S3 | Rust language support (ast-grep rules, parser, fixture, tests) | 4dc01e2 |
+| M5-S4 | Distribution: go install + brew tap (GoReleaser, Homebrew formula) | f67234e |
+| M5-S5 | Distribution: npx thin wrapper (platform detection, binary download) | e788f58 |
+| M5-S6 | Error messages + help text (exit codes, typed errors, cobra Long descs) | b0251bc |
+
+### Test Count
+- All packages passing, race detector clean
+- Watcher: 6, Python parser: 9, Python indexer: 4, Rust parser: 6, Rust indexer: 3, CLI errors: 8
+- Pre-existing failures: 4 subtests in skills/tests (M3 binary-name assertions — contradictory test logic)
+
+### Notes
+- fsnotify watcher recursively watches all subdirs; dynamically adds new dirs
+- Debounce: 100ms per-file window using time.AfterFunc
+- Python export detection: names not starting with `_` are exported
+- Rust export detection: `pub` keyword in match text
+- .gitignore fixed: `bin/` → `/bin/` (was shadowing npm/bin/ and cmd/codeindex/)
+- GoReleaser config: CGO_ENABLED=0, ldflags version injection, brew tap auto-update
+- npx wrapper caches binary in npm/.bin/, uses curl/wget for download
+- ErrAstGrepNotFound (exit 3), ConfigError (exit 2), generic errors (exit 1)
