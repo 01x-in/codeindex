@@ -17,8 +17,14 @@ import (
 var serveCmd = &cobra.Command{
 	Use:   "serve",
 	Short: "Start MCP stdio JSON-RPC server",
-	Long:  `Starts the MCP server over stdio for AI agent integration.`,
-	RunE:  runServe,
+	Long: `Start the MCP stdio server for agent integration.
+
+Connect your AI coding agent by adding to its MCP config:
+  {"command": "codeindex", "args": ["serve"]}
+
+Examples:
+  codeindex serve`,
+	RunE: runServe,
 }
 
 func runServe(cmd *cobra.Command, args []string) error {
@@ -30,7 +36,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 	// Load config.
 	cfg, _, err := config.LoadOrDetect(dir)
 	if err != nil {
-		return fmt.Errorf("loading config: %w", err)
+		return ErrConfigInvalid(err.Error())
 	}
 
 	// Check ast-grep.
