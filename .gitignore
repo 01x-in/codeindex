@@ -1,3 +1,8 @@
+# Agent / build system (local only, not for public repo)
+.claude/
+CLAUDE.md
+agent_docs/
+
 # Build artifacts
 /bin/
 dist/
