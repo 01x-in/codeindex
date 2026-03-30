@@ -55,6 +55,15 @@ var (
 	pyImportNameRe = regexp.MustCompile(`^import\s+(\S+)`)
 	pyFromImportRe = regexp.MustCompile(`from\s+(\S+)\s+import`)
 	pyCallNameRe   = regexp.MustCompile(`^(\w+(?:\.\w+)*)\s*\(`)
+
+	// Rust-specific patterns.
+	// Support generic declarations: fn process<T>(...)
+	rustFuncNameRe   = regexp.MustCompile(`fn\s+(\w+)\s*(?:<[^>]*)?\s*\(`)
+	rustStructNameRe = regexp.MustCompile(`(?:pub\s+)?struct\s+(\w+)`)
+	rustEnumNameRe   = regexp.MustCompile(`(?:pub\s+)?enum\s+(\w+)`)
+	rustTraitNameRe  = regexp.MustCompile(`(?:pub\s+)?trait\s+(\w+)`)
+	rustUsePathRe    = regexp.MustCompile(`use\s+([\w:]+)`)
+	rustCallNameRe   = regexp.MustCompile(`^(\w+(?:::\w+)*)\s*(?:::<[^>]*)?\s*\(`)
 )
 
 // nodeRuleIDs are the rule IDs that produce nodes (symbol definitions).
@@ -164,6 +173,36 @@ func ParseMatches(matches []AstGrepMatch, filePath string, language string) Pars
 
 		case "python-call-expr":
 			if edge := parsePythonCall(m, filePath); edge != nil {
+				result.Edges = append(result.Edges, *edge)
+			}
+
+		// Rust rules.
+		case "rust-func-def":
+			if node := parseRustFuncDef(m, filePath, language); node != nil {
+				result.Nodes = append(result.Nodes, *node)
+			}
+
+		case "rust-struct-def":
+			if node := parseRustStructDef(m, filePath, language); node != nil {
+				result.Nodes = append(result.Nodes, *node)
+			}
+
+		case "rust-enum-def":
+			if node := parseRustEnumDef(m, filePath, language); node != nil {
+				result.Nodes = append(result.Nodes, *node)
+			}
+
+		case "rust-trait-def":
+			if node := parseRustTraitDef(m, filePath, language); node != nil {
+				result.Nodes = append(result.Nodes, *node)
+			}
+
+		case "rust-use-stmt":
+			edges := parseRustUse(m, filePath)
+			result.Edges = append(result.Edges, edges...)
+
+		case "rust-call-expr":
+			if edge := parseRustCall(m, filePath); edge != nil {
 				result.Edges = append(result.Edges, *edge)
 			}
 		}
@@ -827,6 +866,159 @@ func isPythonBuiltinCall(name string) bool {
 		"vars":       true,
 		"dir":        true,
 		"id":         true,
+	}
+	return builtins[name]
+}
+
+// --- Rust parsers ---
+
+func parseRustFuncDef(m AstGrepMatch, filePath string, language string) *graph.Node {
+	match := rustFuncNameRe.FindStringSubmatch(m.Text)
+	if match == nil {
+		return nil
+	}
+
+	name := match[1]
+	exported := strings.Contains(m.Text, "pub ")
+
+	return &graph.Node{
+		Name:      name,
+		Kind:      "fn",
+		FilePath:  filePath,
+		LineStart: m.Range.Start.Line + 1,
+		LineEnd:   m.Range.End.Line + 1,
+		ColStart:  m.Range.Start.Column,
+		ColEnd:    m.Range.End.Column,
+		Exported:  exported,
+		Language:  language,
+	}
+}
+
+func parseRustStructDef(m AstGrepMatch, filePath string, language string) *graph.Node {
+	match := rustStructNameRe.FindStringSubmatch(m.Text)
+	if match == nil {
+		return nil
+	}
+
+	return &graph.Node{
+		Name:      match[1],
+		Kind:      "class",
+		FilePath:  filePath,
+		LineStart: m.Range.Start.Line + 1,
+		LineEnd:   m.Range.End.Line + 1,
+		ColStart:  m.Range.Start.Column,
+		ColEnd:    m.Range.End.Column,
+		Exported:  strings.Contains(m.Text, "pub "),
+		Language:  language,
+	}
+}
+
+func parseRustEnumDef(m AstGrepMatch, filePath string, language string) *graph.Node {
+	match := rustEnumNameRe.FindStringSubmatch(m.Text)
+	if match == nil {
+		return nil
+	}
+
+	return &graph.Node{
+		Name:      match[1],
+		Kind:      "class",
+		FilePath:  filePath,
+		LineStart: m.Range.Start.Line + 1,
+		LineEnd:   m.Range.End.Line + 1,
+		ColStart:  m.Range.Start.Column,
+		ColEnd:    m.Range.End.Column,
+		Exported:  strings.Contains(m.Text, "pub "),
+		Language:  language,
+	}
+}
+
+func parseRustTraitDef(m AstGrepMatch, filePath string, language string) *graph.Node {
+	match := rustTraitNameRe.FindStringSubmatch(m.Text)
+	if match == nil {
+		return nil
+	}
+
+	return &graph.Node{
+		Name:      match[1],
+		Kind:      "type",
+		FilePath:  filePath,
+		LineStart: m.Range.Start.Line + 1,
+		LineEnd:   m.Range.End.Line + 1,
+		ColStart:  m.Range.Start.Column,
+		ColEnd:    m.Range.End.Column,
+		Exported:  strings.Contains(m.Text, "pub "),
+		Language:  language,
+	}
+}
+
+func parseRustUse(m AstGrepMatch, filePath string) []ParsedEdge {
+	match := rustUsePathRe.FindStringSubmatch(m.Text)
+	if match == nil {
+		return nil
+	}
+
+	// Use the last segment of the path as the target name.
+	path := match[1]
+	parts := strings.Split(path, "::")
+	targetName := parts[len(parts)-1]
+	if targetName == "" {
+		targetName = path
+	}
+
+	return []ParsedEdge{
+		{
+			SourceName: "",
+			TargetName: targetName,
+			Kind:       "imports",
+			FilePath:   filePath,
+			Line:       m.Range.Start.Line + 1,
+		},
+	}
+}
+
+func parseRustCall(m AstGrepMatch, filePath string) *ParsedEdge {
+	match := rustCallNameRe.FindStringSubmatch(m.Text)
+	if match == nil {
+		return nil
+	}
+
+	calledName := match[1]
+	if isRustBuiltinCall(calledName) {
+		return nil
+	}
+
+	return &ParsedEdge{
+		SourceName: "",
+		TargetName: calledName,
+		Kind:       "calls",
+		FilePath:   filePath,
+		Line:       m.Range.Start.Line + 1,
+	}
+}
+
+// isRustBuiltinCall returns true for Rust built-in/macro calls that shouldn't be edges.
+func isRustBuiltinCall(name string) bool {
+	builtins := map[string]bool{
+		"println":       true,
+		"print":         true,
+		"eprintln":      true,
+		"eprint":        true,
+		"vec":           true,
+		"format":        true,
+		"assert":        true,
+		"assert_eq":     true,
+		"assert_ne":     true,
+		"panic":         true,
+		"todo":          true,
+		"unimplemented": true,
+		"unreachable":   true,
+		"dbg":           true,
+		"write":         true,
+		"writeln":       true,
+		"Some":          true,
+		"None":          true,
+		"Ok":            true,
+		"Err":           true,
 	}
 	return builtins[name]
 }
