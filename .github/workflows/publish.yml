@@ -1,0 +1,51 @@
+name: Publish Package
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  id-token: write  # Required for --provenance
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Check version is new
+        id: version_check
+        working-directory: npm
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          PUBLISHED=$(npm view codeindex version 2>/dev/null || echo "0.0.0")
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "published=$PUBLISHED" >> $GITHUB_OUTPUT
+          if [ "$TAG" = "$PUBLISHED" ]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "Version $TAG already published — skipping."
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+            echo "Publishing $TAG (was $PUBLISHED)"
+          fi
+
+      - name: Sync version from tag
+        if: steps.version_check.outputs.skip == 'false'
+        working-directory: npm
+        env:
+          PKG_VERSION: ${{ steps.version_check.outputs.tag }}
+        run: npm version "$PKG_VERSION" --no-git-tag-version
+
+      - name: Publish
+        if: steps.version_check.outputs.skip == 'false'
+        working-directory: npm
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
