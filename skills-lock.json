@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "codeindex": {
+      "source": "01x-in/codeindex",
+      "sourceType": "github",
+      "computedHash": "e6e9e257342feea15e63b1e8746e75d0f5a7ade8dd8f7692332283ee9198db53"
+    }
+  }
+}
