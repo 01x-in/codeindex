@@ -2,8 +2,21 @@
   "name": "codeindex",
   "version": "0.1.0",
   "description": "Persistent structural knowledge graph for codebases — MCP tools + CLI tree explorer",
-  "keywords": ["ast", "code-index", "mcp", "knowledge-graph", "cli"],
-  "homepage": "https://github.com/01x-in/codeindex",
+  "keywords": [
+    "ast",
+    "tree-sitter",
+    "ast-grep",
+    "mcp",
+    "code-intelligence",
+    "knowledge-graph",
+    "claude-code",
+    "cursor",
+    "codex",
+    "ai-coding",
+    "structural-search",
+    "codebase-index"
+  ],
+  "homepage": "https://codeindex.cc",
   "repository": {
     "type": "git",
     "url": "https://github.com/01x-in/codeindex.git"
