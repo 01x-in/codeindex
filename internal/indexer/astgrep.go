@@ -82,11 +82,18 @@ func (r *SubprocessRunner) ScanWithInlineRules(rules string, targetPath string) 
 	return matches, nil
 }
 
+// ErrAstGrepNotFound is returned when ast-grep is not found in PATH.
+type ErrAstGrepNotFound struct{}
+
+func (e ErrAstGrepNotFound) Error() string {
+	return "ast-grep not found in PATH"
+}
+
 // CheckInstalled verifies ast-grep is available in PATH.
 func CheckInstalled() error {
 	_, err := exec.LookPath("ast-grep")
 	if err != nil {
-		return fmt.Errorf("ast-grep not found in PATH. Install: https://ast-grep.github.io/guide/quick-start.html")
+		return ErrAstGrepNotFound{}
 	}
 	return nil
 }

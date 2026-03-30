@@ -17,8 +17,11 @@ import (
 var statusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "Show index health summary",
-	Long: `Prints: total files indexed, stale file count, last full reindex timestamp,
-and list of changed files since last index.`,
+	Long: `Show index health: file counts, staleness, last reindex time.
+
+Examples:
+  codeindex status          # human-readable output
+  codeindex status --json   # JSON output`,
 	RunE: runStatus,
 }
 

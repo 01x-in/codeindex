@@ -14,8 +14,12 @@ import (
 var treeCmd = &cobra.Command{
 	Use:   "tree [symbol]",
 	Short: "Interactive TUI tree view of the knowledge graph",
-	Long: `Renders an interactive tree view rooted at a symbol or file.
-Navigate with arrow keys, expand/collapse with Enter, search with /.`,
+	Long: `Navigate the knowledge graph interactively.
+
+Examples:
+  codeindex tree handleRequest              # symbol-rooted tree
+  codeindex tree --file src/api/handler.ts  # file structure tree
+  codeindex tree handleRequest --json       # JSON output`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: runTree,
 }

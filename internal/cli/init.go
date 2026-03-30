@@ -14,8 +14,14 @@ import (
 var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Auto-detect languages and initialize .codeindex.yaml",
-	Long: `Detects languages from project markers (package.json, go.mod, pyproject.toml,
-Cargo.toml), proposes detected config, and writes .codeindex.yaml on confirmation.`,
+	Long: `Auto-detect languages from project markers and create .codeindex.yaml.
+
+Detects: package.json/tsconfig.json → typescript, go.mod → go,
+         pyproject.toml → python, Cargo.toml → rust
+
+Examples:
+  codeindex init          # interactive
+  codeindex init --yes    # non-interactive, accept all defaults`,
 	RunE: runInit,
 }
 

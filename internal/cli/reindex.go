@@ -20,8 +20,12 @@ import (
 var reindexCmd = &cobra.Command{
 	Use:   "reindex [file]",
 	Short: "Re-index stale files or a specific file",
-	Long: `Re-index all stale files (incremental via hash comparison) or a single file.
-Use --watch to start a watcher that auto-reindexes on file save.`,
+	Long: `Re-index stale files or watch for changes.
+
+Examples:
+  codeindex reindex                  # re-index all stale files
+  codeindex reindex src/utils.ts     # re-index a single file
+  codeindex reindex --watch          # watch mode, auto-reindex on save`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: runReindex,
 }
@@ -49,10 +53,10 @@ func runReindex(cmd *cobra.Command, args []string) error {
 	// Load config.
 	cfg, found, err := config.LoadOrDetect(dir)
 	if err != nil {
-		return fmt.Errorf("loading config: %w", err)
+		return ErrConfigInvalid(err.Error())
 	}
 	if !found && len(cfg.Languages) == 0 {
-		return fmt.Errorf("no .codeindex.yaml found and no languages detected. Run 'codeindex init' first")
+		return ErrConfigNotFound()
 	}
 
 	// Check ast-grep.
