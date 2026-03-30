@@ -99,14 +99,14 @@ func TestIndexRustSingleFile(t *testing.T) {
 	// User struct must exist and be exported.
 	userNodes, err := store.FindNodesByName("User")
 	require.NoError(t, err)
-	assert.GreaterOrEqual(t, len(userNodes), 1, "User struct should be indexed")
+	require.GreaterOrEqual(t, len(userNodes), 1, "User struct should be indexed")
 	assert.Equal(t, "class", userNodes[0].Kind)
 	assert.True(t, userNodes[0].Exported)
 
 	// Repository trait must be a "type" kind.
 	repoNodes, err := store.FindNodesByName("Repository")
 	require.NoError(t, err)
-	assert.GreaterOrEqual(t, len(repoNodes), 1, "Repository trait should be indexed")
+	require.GreaterOrEqual(t, len(repoNodes), 1, "Repository trait should be indexed")
 	assert.Equal(t, "type", repoNodes[0].Kind)
 }
 
