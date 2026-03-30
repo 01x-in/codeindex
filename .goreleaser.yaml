@@ -1,0 +1,50 @@
+version: 2
+project_name: codeindex
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: codeindex
+    main: ./cmd/codeindex
+    binary: codeindex
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X github.com/01x/codeindex/internal/cli.Version={{.Version}}
+
+archives:
+  - format: tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        format: zip
+
+checksum:
+  name_template: "checksums.txt"
+
+release:
+  github:
+    owner: 01x-in
+    name: codeindex
+
+brews:
+  - name: codeindex
+    repository:
+      owner: 01x-in
+      name: homebrew-tap
+    directory: Formula
+    homepage: "https://github.com/01x-in/codeindex"
+    description: "Persistent structural knowledge graph for codebases — MCP tools + CLI tree explorer"
+    install: |
+      bin.install "codeindex"
+    test: |
+      assert_match "codeindex", shell_output("#{bin}/codeindex version")
