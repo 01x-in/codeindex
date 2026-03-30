@@ -55,7 +55,22 @@ function downloadAndExtract(url, destDir, binaryName) {
   mkdirSync(destDir, { recursive: true });
 
   if (isZip) {
-    execFileSync('unzip', ['-o', tmpFile, binaryName, '-d', destDir], { stdio: 'inherit' });
+    // On Windows, `unzip` is not guaranteed to be present. Extract the single
+    // binary entry from the ZIP using PowerShell's Expand-Archive, which ships
+    // with every Windows 10+ / Server 2016+ installation.
+    if (process.platform === 'win32') {
+      const destBin = path.join(destDir, binaryName);
+      execFileSync('powershell', [
+        '-NoProfile', '-NonInteractive', '-Command',
+        `Add-Type -AssemblyName System.IO.Compression.FileSystem; ` +
+        `$zip = [System.IO.Compression.ZipFile]::OpenRead('${tmpFile}'); ` +
+        `$entry = $zip.Entries | Where-Object { $_.Name -eq '${binaryName}' } | Select-Object -First 1; ` +
+        `[System.IO.Compression.ZipFileExtensions]::ExtractToFile($entry, '${destBin}', $true); ` +
+        `$zip.Dispose()`,
+      ], { stdio: 'inherit' });
+    } else {
+      execFileSync('unzip', ['-o', tmpFile, binaryName, '-d', destDir], { stdio: 'inherit' });
+    }
   } else {
     execFileSync('tar', ['-xzf', tmpFile, '-C', destDir, binaryName], { stdio: 'inherit' });
   }
