@@ -1,8 +1,13 @@
 package service
 
 import (
+	"fmt"
+	"sync/atomic"
+
 	"example.com/testproject/pkg/models"
 )
+
+var idCounter uint64
 
 // UserService handles user-related operations.
 type UserService struct {
@@ -53,5 +58,6 @@ func CreateUser(svc *UserService, name string, email string) (*models.User, erro
 }
 
 func generateID() string {
-	return "id-001"
+	n := atomic.AddUint64(&idCounter, 1)
+	return fmt.Sprintf("id-%04d", n)
 }
