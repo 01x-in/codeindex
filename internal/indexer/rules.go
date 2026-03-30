@@ -37,7 +37,37 @@ language: TypeScript
 rule:
   kind: call_expression`
 
+// GoRules is the inline rules YAML for Go symbol extraction.
+// We match type_spec (not type_declaration) so that grouped type blocks
+// like `type ( A struct{}; B interface{} )` emit one match per type spec
+// instead of one match for the whole block.
+const GoRules = `id: go-function-def
+language: Go
+rule:
+  kind: function_declaration
+---
+id: go-method-def
+language: Go
+rule:
+  kind: method_declaration
+---
+id: go-type-decl
+language: Go
+rule:
+  kind: type_spec
+---
+id: go-import
+language: Go
+rule:
+  kind: import_declaration
+---
+id: go-call-expr
+language: Go
+rule:
+  kind: call_expression`
+
 // LanguageRules maps language names to their inline rule strings.
 var LanguageRules = map[string]string{
 	"typescript": TypeScriptRules,
+	"go":         GoRules,
 }
