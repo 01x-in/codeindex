@@ -41,7 +41,7 @@ var (
 	// Support generic declarations: func Map[T any](...), type Set[T comparable] struct{}
 	goFuncNameRe   = regexp.MustCompile(`func\s+(\w+)\s*(?:\[|[\(])`)
 	goMethodNameRe = regexp.MustCompile(`func\s+\([^)]+\)\s+(\w+)\s*(?:\[|[\(])`)
-	goTypeNameRe   = regexp.MustCompile(`(\w+)\s*(?:\[.*?\]\s+)?`)
+	goTypeNameRe   = regexp.MustCompile(`type\s+(\w+)\s*(?:\[.*?\]\s+)?`)
 	goImportPathRe = regexp.MustCompile(`"([^"]+)"`)
 	goCallNameRe   = regexp.MustCompile(`^(\w+(?:\.\w+)*)\s*(?:\[.*?\])?\s*\(`)
 
