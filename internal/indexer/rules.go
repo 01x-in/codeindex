@@ -92,9 +92,41 @@ language: Python
 rule:
   kind: call`
 
+// RustRules is the inline rules YAML for Rust symbol extraction.
+const RustRules = `id: rust-func-def
+language: Rust
+rule:
+  kind: function_item
+---
+id: rust-struct-def
+language: Rust
+rule:
+  kind: struct_item
+---
+id: rust-enum-def
+language: Rust
+rule:
+  kind: enum_item
+---
+id: rust-trait-def
+language: Rust
+rule:
+  kind: trait_item
+---
+id: rust-use-stmt
+language: Rust
+rule:
+  kind: use_declaration
+---
+id: rust-call-expr
+language: Rust
+rule:
+  kind: call_expression`
+
 // LanguageRules maps language names to their inline rule strings.
 var LanguageRules = map[string]string{
 	"typescript": TypeScriptRules,
 	"go":         GoRules,
 	"python":     PythonRules,
+	"rust":       RustRules,
 }
