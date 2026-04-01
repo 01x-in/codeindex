@@ -148,7 +148,7 @@ index_path: .codeindex
 Install the codeindex skill for your AI agent (instructs it when to call `get_file_structure`, when to `reindex`, how to read the `stale` flag):
 
 ```sh
-npx skills add 01x-in/codeindex/skills
+npx skills add 01x-in/codeindex-skills
 ```
 
 Supports Claude Code, Cursor, Codex, and 16+ other agents via [skills.sh](https://skills.sh).
