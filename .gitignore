@@ -1,5 +1,6 @@
 # Agent / build system (local only, not for public repo)
 .claude/
+.junie/
 CLAUDE.md
 agent_docs/
 
