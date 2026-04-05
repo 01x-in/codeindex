@@ -37,6 +37,7 @@ release:
     name: codeindex
 
 brews:
+  - name: codeindex
     repository:
       owner: 01x-in
       name: homebrew-tap
