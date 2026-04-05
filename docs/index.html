@@ -1,36 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>codeindex — Structural code intelligence for AI agents</title>
-  <meta name="description" content="A persistent knowledge graph for codebases. Query symbols, references, and call chains via MCP — instead of reading raw files.">
+  <meta name="description"
+    content="A persistent knowledge graph for codebases. Query symbols, references, and call chains via MCP — instead of reading raw files.">
   <meta property="og:title" content="codeindex">
-  <meta property="og:description" content="A persistent structural knowledge graph for codebases. Cut agent context usage 10-20x.">
+  <meta property="og:description"
+    content="A persistent structural knowledge graph for codebases. Cut agent context usage 10-20x.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Instrument+Serif:ital@1&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Instrument+Serif:ital@1&display=swap"
+    rel="stylesheet">
   <script src="https://kit.fontawesome.com/3740feb428.js" crossorigin="anonymous"></script>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --bg:          #060606;
-      --surface:     #0D0D0D;
-      --border:      #1A1A1A;
-      --border-md:   #242424;
-      --text:        #E2E2E2;
-      --text-dim:    #555;
-      --text-mid:    #888;
-      --accent:      #D4FF4F;
-      --accent-dim:  #6A801A;
-      --accent-glow: rgba(212,255,79,0.12);
-      --red:         #FF5F57;
-      --fn:          #79C0FF;
-      --type:        #FFA657;
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
 
-    html { scroll-behavior: smooth; scroll-snap-type: y proximity; }
+    :root {
+      --bg: #060606;
+      --surface: #0D0D0D;
+      --border: #1A1A1A;
+      --border-md: #242424;
+      --text: #E2E2E2;
+      --text-dim: #555;
+      --text-mid: #888;
+      --accent: #D4FF4F;
+      --accent-dim: #6A801A;
+      --accent-glow: rgba(212, 255, 79, 0.12);
+      --red: #FF5F57;
+      --fn: #79C0FF;
+      --type: #FFA657;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      scroll-snap-type: y proximity;
+    }
 
     body {
       background: var(--bg);
@@ -68,7 +82,9 @@
     /* NAV */
     nav {
       position: fixed;
-      top: 0; left: 0; right: 0;
+      top: 0;
+      left: 0;
+      right: 0;
       z-index: 100;
       display: flex;
       align-items: center;
@@ -76,7 +92,7 @@
       padding: 0 40px;
       height: 56px;
       border-bottom: 1px solid var(--border);
-      background: rgba(6,6,6,0.88);
+      background: rgba(6, 6, 6, 0.88);
       backdrop-filter: blur(12px);
     }
 
@@ -93,7 +109,8 @@
     }
 
     .nav-dot {
-      width: 7px; height: 7px;
+      width: 7px;
+      height: 7px;
       border-radius: 50%;
       background: var(--accent);
       box-shadow: 0 0 8px var(--accent);
@@ -101,8 +118,17 @@
     }
 
     @keyframes pulse {
-      0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--accent); }
-      50%       { opacity: 0.5; box-shadow: 0 0 18px var(--accent); }
+
+      0%,
+      100% {
+        opacity: 1;
+        box-shadow: 0 0 8px var(--accent);
+      }
+
+      50% {
+        opacity: 0.5;
+        box-shadow: 0 0 18px var(--accent);
+      }
     }
 
     .nav-links {
@@ -119,7 +145,9 @@
       transition: color 0.15s;
     }
 
-    .nav-links a:hover { color: var(--text); }
+    .nav-links a:hover {
+      color: var(--text);
+    }
 
     .nav-gh {
       display: flex;
@@ -153,8 +181,15 @@
     }
 
     @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(16px); }
-      to   { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     .hero-badge {
@@ -175,7 +210,8 @@
     }
 
     .badge-dot {
-      width: 5px; height: 5px;
+      width: 5px;
+      height: 5px;
       border-radius: 50%;
       background: var(--accent);
     }
@@ -193,7 +229,9 @@
       animation: fadeUp 0.7s ease forwards 0.35s;
     }
 
-    .accent-word { color: var(--accent); }
+    .accent-word {
+      color: var(--accent);
+    }
 
     .hero-serif {
       font-family: 'Instrument Serif', serif;
@@ -260,7 +298,10 @@
       transition: color 0.15s, background 0.15s;
     }
 
-    .install-copy:hover { color: var(--accent); background: var(--accent-glow); }
+    .install-copy:hover {
+      color: var(--accent);
+      background: var(--accent-glow);
+    }
 
     .install-alts {
       font-size: 12px;
@@ -275,7 +316,9 @@
       transition: color 0.15s;
     }
 
-    .install-alts a:hover { color: var(--text-mid); }
+    .install-alts a:hover {
+      color: var(--text-mid);
+    }
 
     /* GRAPH SECTION */
     .graph-section {
@@ -310,7 +353,11 @@
       box-shadow: 0 0 6px var(--accent);
     }
 
-    .graph-canvas { width: 100%; height: 380px; display: block; }
+    .graph-canvas {
+      width: 100%;
+      height: 380px;
+      display: block;
+    }
 
     /* SECTION OUTER — full-viewport snap container */
     .section-outer {
@@ -331,7 +378,9 @@
       scroll-snap-align: end;
     }
 
-    hr.divider { display: none; }
+    hr.divider {
+      display: none;
+    }
 
     /* SECTIONS */
     section {
@@ -394,7 +443,9 @@
       transition: background 0.2s;
     }
 
-    .problem-card:hover { background: #111; }
+    .problem-card:hover {
+      background: #111;
+    }
 
     .problem-num {
       font-size: 48px;
@@ -454,22 +505,63 @@
       display: inline-block;
     }
 
-    .node-fn   { color: var(--fn);   border-color: rgba(121,192,255,0.2); background: rgba(121,192,255,0.04); }
-    .node-type { color: var(--type); border-color: rgba(255,166,87,0.2);  background: rgba(255,166,87,0.04); }
-    .node-stale{ color: var(--text-dim); border-style: dashed; }
+    .node-fn {
+      color: var(--fn);
+      border-color: rgba(121, 192, 255, 0.2);
+      background: rgba(121, 192, 255, 0.04);
+    }
 
-    .node-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
-    .edge-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 11px; }
-    .edge-arr { color: var(--text-dim); white-space: nowrap; }
+    .node-type {
+      color: var(--type);
+      border-color: rgba(255, 166, 87, 0.2);
+      background: rgba(255, 166, 87, 0.04);
+    }
 
-    .meta-row { font-size: 11px; line-height: 1.9; }
+    .node-stale {
+      color: var(--text-dim);
+      border-style: dashed;
+    }
 
-    .how-steps { display: flex; flex-direction: column; gap: 28px; }
+    .node-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
 
-    .how-step { display: flex; gap: 20px; }
+    .edge-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+      font-size: 11px;
+    }
+
+    .edge-arr {
+      color: var(--text-dim);
+      white-space: nowrap;
+    }
+
+    .meta-row {
+      font-size: 11px;
+      line-height: 1.9;
+    }
+
+    .how-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    .how-step {
+      display: flex;
+      gap: 20px;
+    }
 
     .step-num {
-      width: 28px; height: 28px; min-width: 28px;
+      width: 28px;
+      height: 28px;
+      min-width: 28px;
       border: 1px solid var(--border-md);
       border-radius: 4px;
       display: flex;
@@ -516,8 +608,13 @@
       transition: background 0.2s;
     }
 
-    .tool-card:hover { background: #0F0F0F; }
-    .tool-card:hover .tool-name { color: var(--accent); }
+    .tool-card:hover {
+      background: #0F0F0F;
+    }
+
+    .tool-card:hover .tool-name {
+      color: var(--accent);
+    }
 
     .tool-name {
       font-size: 13px;
@@ -575,10 +672,23 @@
       border-bottom: 1px solid var(--border-md);
     }
 
-    .td { width: 10px; height: 10px; border-radius: 50%; }
-    .td-r { background: #FF5F57; }
-    .td-y { background: #FFBD2E; }
-    .td-g { background: #27C93F; }
+    .td {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .td-r {
+      background: #FF5F57;
+    }
+
+    .td-y {
+      background: #FFBD2E;
+    }
+
+    .td-g {
+      background: #27C93F;
+    }
 
     .terminal-title {
       font-size: 11px;
@@ -592,20 +702,51 @@
       overflow: hidden;
     }
 
-    .t-line { display: block; min-height: 1.6em; }
-    .t-prompt { color: var(--accent); }
-    .t-cmd    { color: var(--text); }
-    .t-dim    { color: var(--text-dim); }
-    .t-key    { color: var(--fn); }
-    .t-str    { color: #A8CC8C; }
-    .t-num    { color: #D2A8FF; }
-    .t-true   { color: var(--accent); }
-    .t-false  { color: var(--red); }
-    .t-fn-c   { color: var(--fn); }
+    .t-line {
+      display: block;
+      min-height: 1.6em;
+    }
+
+    .t-prompt {
+      color: var(--accent);
+    }
+
+    .t-cmd {
+      color: var(--text);
+    }
+
+    .t-dim {
+      color: var(--text-dim);
+    }
+
+    .t-key {
+      color: var(--fn);
+    }
+
+    .t-str {
+      color: #A8CC8C;
+    }
+
+    .t-num {
+      color: #D2A8FF;
+    }
+
+    .t-true {
+      color: var(--accent);
+    }
+
+    .t-false {
+      color: var(--red);
+    }
+
+    .t-fn-c {
+      color: var(--fn);
+    }
 
     .cursor {
       display: inline-block;
-      width: 7px; height: 13px;
+      width: 7px;
+      height: 13px;
       background: var(--accent);
       vertical-align: middle;
       margin-left: 2px;
@@ -613,11 +754,23 @@
     }
 
     @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50%       { opacity: 0; }
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0;
+      }
     }
 
-    .demo-features { display: flex; flex-direction: column; gap: 20px; padding-top: 8px; }
+    .demo-features {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      padding-top: 8px;
+    }
 
     .demo-feat {
       display: flex;
@@ -628,11 +781,29 @@
       transition: border-color 0.2s;
     }
 
-    .demo-feat:hover { border-color: var(--border-md); }
+    .demo-feat:hover {
+      border-color: var(--border-md);
+    }
 
-    .demo-feat-icon { font-size: 18px; min-width: 28px; text-align: center; margin-top: 2px; }
-    .demo-feat-title { font-size: 13px; font-weight: 500; margin-bottom: 4px; }
-    .demo-feat-body { font-size: 12px; color: var(--text-dim); font-weight: 300; line-height: 1.6; }
+    .demo-feat-icon {
+      font-size: 18px;
+      min-width: 28px;
+      text-align: center;
+      margin-top: 2px;
+    }
+
+    .demo-feat-title {
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .demo-feat-body {
+      font-size: 12px;
+      color: var(--text-dim);
+      font-weight: 300;
+      line-height: 1.6;
+    }
 
     /* LANGUAGES */
     .langs-row {
@@ -656,7 +827,9 @@
       transition: background 0.2s;
     }
 
-    .lang-card:hover { background: #0F0F0F; }
+    .lang-card:hover {
+      background: #0F0F0F;
+    }
 
     .lang-icon {
       font-size: 36px;
@@ -665,13 +838,31 @@
       display: block;
       text-align: center;
     }
-    .lang-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px; margin-bottom: 6px; }
-    .lang-detect { font-size: 11px; color: var(--text-dim); }
+
+    .lang-name {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 15px;
+      margin-bottom: 6px;
+    }
+
+    .lang-detect {
+      font-size: 11px;
+      color: var(--text-dim);
+    }
 
     /* INSTALL */
-    .install-section { text-align: center; }
-    .install-section .section-tag { justify-content: center; }
-    .install-section .section-tag::before { display: none; }
+    .install-section {
+      text-align: center;
+    }
+
+    .install-section .section-tag {
+      justify-content: center;
+    }
+
+    .install-section .section-tag::before {
+      display: none;
+    }
 
     .install-methods {
       display: grid;
@@ -689,10 +880,22 @@
       transition: border-color 0.2s;
     }
 
-    .install-method:hover { border-color: var(--border-md); }
+    .install-method:hover {
+      border-color: var(--border-md);
+    }
 
-    .install-method-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px; margin-bottom: 6px; }
-    .install-method-desc { font-size: 11px; color: var(--text-dim); margin-bottom: 20px; }
+    .install-method-title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 15px;
+      margin-bottom: 6px;
+    }
+
+    .install-method-desc {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-bottom: 20px;
+    }
 
     .code-block {
       background: var(--bg);
@@ -717,11 +920,29 @@
       text-align: left;
     }
 
-    .qs-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 16px; }
-    .qs-line  { font-size: 13px; line-height: 2.2; display: block; }
-    .qs-comment { color: var(--text-dim); }
+    .qs-label {
+      font-size: 11px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 16px;
+    }
 
-    hr.divider { border: none; border-top: 1px solid var(--border); margin: 0; }
+    .qs-line {
+      font-size: 13px;
+      line-height: 2.2;
+      display: block;
+    }
+
+    .qs-comment {
+      color: var(--text-dim);
+    }
+
+    hr.divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 0;
+    }
 
     /* FOOTER */
     footer {
@@ -734,569 +955,685 @@
       justify-content: space-between;
     }
 
-    .footer-logo { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 16px; letter-spacing: -0.02em; margin-bottom: 6px; }
-    .footer-copy { font-size: 12px; color: var(--text-dim); }
-    .footer-copy a { color: var(--text-dim); text-decoration: none; }
-    .footer-links { display: flex; gap: 28px; }
-    .footer-links a { font-size: 12px; color: var(--text-dim); text-decoration: none; transition: color 0.15s; }
-    .footer-links a:hover { color: var(--text-mid); }
+    .footer-logo {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+    }
+
+    .footer-copy {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .footer-copy a {
+      color: var(--text-dim);
+      text-decoration: none;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 28px;
+    }
+
+    .footer-links a {
+      font-size: 12px;
+      color: var(--text-dim);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+
+    .footer-links a:hover {
+      color: var(--text-mid);
+    }
 
     /* SCROLL REVEAL */
-    .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.7s ease, transform 0.7s ease; }
-    .reveal.visible { opacity: 1; transform: none; }
+    .reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: none;
+    }
 
     /* RESPONSIVE */
     @media (max-width: 900px) {
-      nav { padding: 0 20px; }
-      .nav-links { display: none; }
-      .hero, section { padding-left: 24px; padding-right: 24px; }
-      .problem-grid { grid-template-columns: 1fr; }
-      .how-layout { grid-template-columns: 1fr; gap: 40px; }
-      .tools-grid { grid-template-columns: 1fr 1fr; }
-      .demo-layout { grid-template-columns: 1fr; }
-      .langs-row { flex-wrap: wrap; }
-      .lang-card { flex: 1 1 40%; }
-      .install-methods { grid-template-columns: 1fr; }
-      footer { flex-direction: column; gap: 24px; text-align: center; }
-      .footer-links { flex-wrap: wrap; justify-content: center; }
+      nav {
+        padding: 0 20px;
+      }
+
+      .nav-links {
+        display: none;
+      }
+
+      .hero,
+      section {
+        padding-left: 24px;
+        padding-right: 24px;
+      }
+
+      .problem-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .how-layout {
+        grid-template-columns: 1fr;
+        gap: 40px;
+      }
+
+      .tools-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .demo-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .langs-row {
+        flex-wrap: wrap;
+      }
+
+      .lang-card {
+        flex: 1 1 40%;
+      }
+
+      .install-methods {
+        grid-template-columns: 1fr;
+      }
+
+      footer {
+        flex-direction: column;
+        gap: 24px;
+        text-align: center;
+      }
+
+      .footer-links {
+        flex-wrap: wrap;
+        justify-content: center;
+      }
     }
 
     @media (max-width: 600px) {
-      .tools-grid { grid-template-columns: 1fr; }
-      .hero-headline { font-size: 44px; }
+      .tools-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-headline {
+        font-size: 44px;
+      }
     }
   </style>
 </head>
+
 <body>
 
-<!-- NAV -->
-<nav>
-  <a href="/" class="nav-logo">
-    <span class="nav-dot"></span>
-    codeindex
-  </a>
-  <ul class="nav-links">
-    <li><a href="#how">How it works</a></li>
-    <li><a href="#tools">MCP Tools</a></li>
-    <li><a href="#install">Install</a></li>
-    <li>
-      <a href="https://github.com/01x-in/codeindex" class="nav-gh">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+  <!-- NAV -->
+  <nav>
+    <a href="/" class="nav-logo">
+      <span class="nav-dot"></span>
+      codeindex
+    </a>
+    <ul class="nav-links">
+      <li><a href="#how">How it works</a></li>
+      <li><a href="#tools">MCP Tools</a></li>
+      <li><a href="#install">Install</a></li>
+      <li>
+        <a href="https://github.com/01x-in/codeindex" class="nav-gh">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path
+              d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" />
+          </svg>
+          GitHub
+        </a>
+      </li>
+    </ul>
+  </nav>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="grid-bg"></div>
+
+    <div class="hero-badge">
+      <span class="badge-dot"></span>
+      v0.1.2 · MIT · TypeScript · Go · Python · Rust
+    </div>
+
+    <h1 class="hero-headline">
+      Your agent is<br>
+      <span class="accent-word">structurally</span><br>
+      blind.
+    </h1>
+
+    <p class="hero-serif">Give it a knowledge graph.</p>
+
+    <p class="hero-desc">
+      codeindex builds a persistent structural graph of your codebase —<br>
+      symbols, references, call chains — queryable via MCP tools.<br>
+      No more reading entire files to find one function signature.
+    </p>
+
+    <div class="install-box">
+      <span class="install-label">brew</span>
+      <span class="install-cmd" id="install-text">brew install 01x-in/tap/codeindex</span>
+      <button class="install-copy" id="copy-btn" onclick="copyInstall()">copy</button>
+    </div>
+
+    <p class="install-alts">
+      also: <a href="#install">go install</a>
+    </p>
+  </div>
+
+  <!-- KNOWLEDGE GRAPH -->
+  <div class="section-outer">
+    <section id="graph" class="reveal">
+      <div class="section-tag">Knowledge Graph</div>
+      <h2 class="section-title">Your codebase,<br>mapped.</h2>
+      <p class="section-body">Symbols become nodes. Calls, imports, and type references become directed edges. Query any
+        relationship — callers, callees, subgraphs — in milliseconds.</p>
+      <div class="graph-section">
+        <p class="graph-label">live knowledge graph</p>
+        <svg class="graph-canvas" viewBox="0 0 800 260" xmlns="http://www.w3.org/2000/svg" role="img"
+          aria-label="Knowledge graph showing function relationships">
+          <g id="graph-edges">
+            <line x1="400" y1="130" x2="590" y2="76" stroke="#2E2E2E" stroke-width="1" />
+            <line x1="400" y1="130" x2="582" y2="160" stroke="#2E2E2E" stroke-width="1" />
+            <line x1="400" y1="130" x2="580" y2="218" stroke="#2E2E2E" stroke-width="1" />
+            <line x1="203" y1="78" x2="328" y2="122" stroke="#2E2E2E" stroke-width="1" />
+            <line x1="203" y1="178" x2="330" y2="138" stroke="#2E2E2E" stroke-width="1" />
+            <line x1="56" y1="78" x2="150" y2="78" stroke="#2E2E2E" stroke-width="1" />
+          </g>
+          <g font-family="JetBrains Mono, monospace" font-size="9" fill="#404040" text-anchor="middle">
+            <text x="500" y="90">calls</text>
+            <text x="495" y="152">calls</text>
+            <text x="492" y="190">calls</text>
+            <text x="262" y="93">calls</text>
+            <text x="264" y="168">calls</text>
+            <text x="103" y="70">calls</text>
+          </g>
+          <g id="graph-nodes">
+            <g class="gnode" data-delay="0">
+              <rect x="8" y="64" width="96" height="28" rx="3" fill="#0D0D0D" stroke="#242424" stroke-width="1" />
+              <text x="56" y="82" font-family="JetBrains Mono, monospace" font-size="11" fill="#79C0FF"
+                text-anchor="middle">fn startServer</text>
+            </g>
+            <g class="gnode" data-delay="100">
+              <rect x="150" y="64" width="106" height="28" rx="3" fill="#0D0D0D" stroke="#242424" stroke-width="1" />
+              <text x="203" y="82" font-family="JetBrains Mono, monospace" font-size="11" fill="#79C0FF"
+                text-anchor="middle">fn routeRequest</text>
+            </g>
+            <g class="gnode" data-delay="200">
+              <rect x="136" y="164" width="134" height="28" rx="3" fill="#0D0D0D" stroke="#242424" stroke-width="1" />
+              <text x="203" y="182" font-family="JetBrains Mono, monospace" font-size="11" fill="#79C0FF"
+                text-anchor="middle">fn processWebhook</text>
+            </g>
+            <g class="gnode" data-delay="50">
+              <rect x="326" y="110" width="150" height="38" rx="3" fill="#0D0D0D" stroke="#D4FF4F" stroke-width="1.5" />
+              <text x="401" y="128" font-family="JetBrains Mono, monospace" font-size="12" fill="#D4FF4F"
+                text-anchor="middle" font-weight="500">fn handleRequest</text>
+              <text x="401" y="141" font-family="JetBrains Mono, monospace" font-size="9" fill="#6A801A"
+                text-anchor="middle">handler.ts:24</text>
+            </g>
+            <g class="gnode" data-delay="300">
+              <rect x="558" y="62" width="114" height="28" rx="3" fill="#0D0D0D" stroke="#242424" stroke-width="1" />
+              <text x="615" y="80" font-family="JetBrains Mono, monospace" font-size="11" fill="#79C0FF"
+                text-anchor="middle">fn validateInput</text>
+            </g>
+            <g class="gnode" data-delay="400">
+              <rect x="550" y="142" width="130" height="36" rx="3" fill="#0D0D0D" stroke="#303030" stroke-width="1"
+                stroke-dasharray="4,3" />
+              <text x="615" y="158" font-family="JetBrains Mono, monospace" font-size="11" fill="#484848"
+                text-anchor="middle">fn queryDatabase</text>
+              <text x="615" y="171" font-family="JetBrains Mono, monospace" font-size="9" fill="#FF5F57"
+                text-anchor="middle">[stale]</text>
+            </g>
+            <g class="gnode" data-delay="500">
+              <rect x="548" y="204" width="134" height="28" rx="3" fill="#0D0D0D" stroke="#242424" stroke-width="1" />
+              <text x="615" y="222" font-family="JetBrains Mono, monospace" font-size="11" fill="#79C0FF"
+                text-anchor="middle">fn formatResponse</text>
+            </g>
+          </g>
+          <g font-family="JetBrains Mono, monospace" font-size="9" fill="#383838">
+            <rect x="10" y="228" width="8" height="8" rx="1" fill="none" stroke="#79C0FF" stroke-width="1" />
+            <text x="22" y="236">fn node</text>
+            <rect x="72" y="228" width="8" height="8" rx="1" fill="none" stroke="#D4FF4F" stroke-width="1" />
+            <text x="84" y="236">selected</text>
+            <rect x="148" y="228" width="8" height="8" rx="1" fill="none" stroke="#555" stroke-dasharray="2,2"
+              stroke-width="1" />
+            <text x="160" y="236">stale</text>
+          </g>
         </svg>
-        GitHub
-      </a>
-    </li>
-  </ul>
-</nav>
-
-<!-- HERO -->
-<div class="hero">
-  <div class="grid-bg"></div>
-
-  <div class="hero-badge">
-    <span class="badge-dot"></span>
-    v0.1.2 · MIT · TypeScript · Go · Python · Rust
+      </div>
+    </section>
   </div>
 
-  <h1 class="hero-headline">
-    Your agent is<br>
-    <span class="accent-word">structurally</span><br>
-    blind.
-  </h1>
-
-  <p class="hero-serif">Give it a knowledge graph.</p>
-
-  <p class="hero-desc">
-    codeindex builds a persistent structural graph of your codebase —<br>
-    symbols, references, call chains — queryable via MCP tools.<br>
-    No more reading entire files to find one function signature.
-  </p>
-
-  <div class="install-box">
-    <span class="install-label">brew</span>
-    <span class="install-cmd" id="install-text">brew install 01x-in/tap/codeindex</span>
-    <button class="install-copy" id="copy-btn" onclick="copyInstall()">copy</button>
+  <!-- PROBLEM -->
+  <div class="section-outer">
+    <section id="problem" class="reveal">
+      <div class="section-tag">The problem</div>
+      <h2 class="section-title">Agents navigate<br>code like it's 1995.</h2>
+      <p class="section-body">
+        Every structural question costs context. Grep calls, file reads, repeated parsing —
+        all because there's no persistent structural memory. Until now.
+      </p>
+      <div class="problem-grid">
+        <div class="problem-card">
+          <div class="problem-num">5×</div>
+          <div class="problem-title">grep calls per "who calls this?"</div>
+          <div class="problem-body">The agent reads files sequentially, searching for patterns instead of querying a
+            graph. Every question restarts from scratch.</div>
+        </div>
+        <div class="problem-card">
+          <div class="problem-num">500+</div>
+          <div class="problem-title">context lines wasted on structure</div>
+          <div class="problem-body">Reading entire files to find one function signature. Most of that context is never
+            needed — the agent is just lost.</div>
+        </div>
+        <div class="problem-card">
+          <div class="problem-num">0%</div>
+          <div class="problem-title">refactor blast radius visibility</div>
+          <div class="problem-body">Before changing a function, the agent can't see who calls it. Downstream callers
+            break. The graph knows — the agent doesn't.</div>
+        </div>
+      </div>
+    </section>
   </div>
 
-  <p class="install-alts">
-    also: <a href="#install">go install</a>
-  </p>
-</div>
-
-<!-- KNOWLEDGE GRAPH -->
-<div class="section-outer">
-<section id="graph" class="reveal">
-  <div class="section-tag">Knowledge Graph</div>
-  <h2 class="section-title">Your codebase,<br>mapped.</h2>
-  <p class="section-body">Symbols become nodes. Calls, imports, and type references become directed edges. Query any relationship — callers, callees, subgraphs — in milliseconds.</p>
-  <div class="graph-section">
-    <p class="graph-label">live knowledge graph</p>
-    <svg class="graph-canvas" viewBox="0 0 800 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Knowledge graph showing function relationships">
-      <g id="graph-edges">
-        <line x1="400" y1="130" x2="590" y2="76"  stroke="#2E2E2E" stroke-width="1"/>
-        <line x1="400" y1="130" x2="582" y2="160" stroke="#2E2E2E" stroke-width="1"/>
-        <line x1="400" y1="130" x2="580" y2="218" stroke="#2E2E2E" stroke-width="1"/>
-        <line x1="203" y1="78"  x2="328" y2="122" stroke="#2E2E2E" stroke-width="1"/>
-        <line x1="203" y1="178" x2="330" y2="138" stroke="#2E2E2E" stroke-width="1"/>
-        <line x1="56"  y1="78"  x2="150" y2="78"  stroke="#2E2E2E" stroke-width="1"/>
-      </g>
-      <g font-family="JetBrains Mono, monospace" font-size="9" fill="#404040" text-anchor="middle">
-        <text x="500" y="90">calls</text>
-        <text x="495" y="152">calls</text>
-        <text x="492" y="190">calls</text>
-        <text x="262" y="93">calls</text>
-        <text x="264" y="168">calls</text>
-        <text x="103" y="70">calls</text>
-      </g>
-      <g id="graph-nodes">
-        <g class="gnode" data-delay="0">
-          <rect x="8" y="64" width="96" height="28" rx="3" fill="#0D0D0D" stroke="#242424" stroke-width="1"/>
-          <text x="56" y="82" font-family="JetBrains Mono, monospace" font-size="11" fill="#79C0FF" text-anchor="middle">fn startServer</text>
-        </g>
-        <g class="gnode" data-delay="100">
-          <rect x="150" y="64" width="106" height="28" rx="3" fill="#0D0D0D" stroke="#242424" stroke-width="1"/>
-          <text x="203" y="82" font-family="JetBrains Mono, monospace" font-size="11" fill="#79C0FF" text-anchor="middle">fn routeRequest</text>
-        </g>
-        <g class="gnode" data-delay="200">
-          <rect x="136" y="164" width="134" height="28" rx="3" fill="#0D0D0D" stroke="#242424" stroke-width="1"/>
-          <text x="203" y="182" font-family="JetBrains Mono, monospace" font-size="11" fill="#79C0FF" text-anchor="middle">fn processWebhook</text>
-        </g>
-        <g class="gnode" data-delay="50">
-          <rect x="326" y="110" width="150" height="38" rx="3" fill="#0D0D0D" stroke="#D4FF4F" stroke-width="1.5"/>
-          <text x="401" y="128" font-family="JetBrains Mono, monospace" font-size="12" fill="#D4FF4F" text-anchor="middle" font-weight="500">fn handleRequest</text>
-          <text x="401" y="141" font-family="JetBrains Mono, monospace" font-size="9" fill="#6A801A" text-anchor="middle">handler.ts:24</text>
-        </g>
-        <g class="gnode" data-delay="300">
-          <rect x="558" y="62" width="114" height="28" rx="3" fill="#0D0D0D" stroke="#242424" stroke-width="1"/>
-          <text x="615" y="80" font-family="JetBrains Mono, monospace" font-size="11" fill="#79C0FF" text-anchor="middle">fn validateInput</text>
-        </g>
-        <g class="gnode" data-delay="400">
-          <rect x="550" y="142" width="130" height="36" rx="3" fill="#0D0D0D" stroke="#303030" stroke-width="1" stroke-dasharray="4,3"/>
-          <text x="615" y="158" font-family="JetBrains Mono, monospace" font-size="11" fill="#484848" text-anchor="middle">fn queryDatabase</text>
-          <text x="615" y="171" font-family="JetBrains Mono, monospace" font-size="9" fill="#FF5F57" text-anchor="middle">[stale]</text>
-        </g>
-        <g class="gnode" data-delay="500">
-          <rect x="548" y="204" width="134" height="28" rx="3" fill="#0D0D0D" stroke="#242424" stroke-width="1"/>
-          <text x="615" y="222" font-family="JetBrains Mono, monospace" font-size="11" fill="#79C0FF" text-anchor="middle">fn formatResponse</text>
-        </g>
-      </g>
-      <g font-family="JetBrains Mono, monospace" font-size="9" fill="#383838">
-        <rect x="10" y="228" width="8" height="8" rx="1" fill="none" stroke="#79C0FF" stroke-width="1"/>
-        <text x="22" y="236">fn node</text>
-        <rect x="72" y="228" width="8" height="8" rx="1" fill="none" stroke="#D4FF4F" stroke-width="1"/>
-        <text x="84" y="236">selected</text>
-        <rect x="148" y="228" width="8" height="8" rx="1" fill="none" stroke="#555" stroke-dasharray="2,2" stroke-width="1"/>
-        <text x="160" y="236">stale</text>
-      </g>
-    </svg>
-  </div>
-</section>
-</div>
-
-<!-- PROBLEM -->
-<div class="section-outer">
-<section id="problem" class="reveal">
-  <div class="section-tag">The problem</div>
-  <h2 class="section-title">Agents navigate<br>code like it's 1995.</h2>
-  <p class="section-body">
-    Every structural question costs context. Grep calls, file reads, repeated parsing —
-    all because there's no persistent structural memory. Until now.
-  </p>
-  <div class="problem-grid">
-    <div class="problem-card">
-      <div class="problem-num">5×</div>
-      <div class="problem-title">grep calls per "who calls this?"</div>
-      <div class="problem-body">The agent reads files sequentially, searching for patterns instead of querying a graph. Every question restarts from scratch.</div>
-    </div>
-    <div class="problem-card">
-      <div class="problem-num">500+</div>
-      <div class="problem-title">context lines wasted on structure</div>
-      <div class="problem-body">Reading entire files to find one function signature. Most of that context is never needed — the agent is just lost.</div>
-    </div>
-    <div class="problem-card">
-      <div class="problem-num">0%</div>
-      <div class="problem-title">refactor blast radius visibility</div>
-      <div class="problem-body">Before changing a function, the agent can't see who calls it. Downstream callers break. The graph knows — the agent doesn't.</div>
-    </div>
-  </div>
-</section>
-</div>
-
-<!-- HOW IT WORKS -->
-<div class="section-outer">
-<section id="how" class="reveal">
-  <div class="section-tag">How it works</div>
-  <h2 class="section-title">Parse once.<br>Query forever.</h2>
-  <div class="how-layout">
-    <div class="how-visual">
-      <div class="v-title">// .codeindex/graph.db</div>
-      <div style="margin-top:8px">
-        <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px">NODES (symbols)</div>
-        <div class="node-row">
-          <span class="node-box node-fn">fn handleRequest</span>
-          <span class="node-box node-fn">fn validateInput</span>
-        </div>
-        <div class="node-row">
-          <span class="node-box node-type">type Request</span>
-          <span class="node-box node-stale">fn oldHelper [stale]</span>
-        </div>
-        <div style="font-size:11px;color:var(--text-dim);margin:16px 0 8px">EDGES (relationships)</div>
-        <div class="edge-row">
-          <span class="node-box node-fn" style="font-size:10px;padding:3px 8px">handleRequest</span>
-          <span class="edge-arr">──calls──▶</span>
-          <span class="node-box node-fn" style="font-size:10px;padding:3px 8px">validateInput</span>
-        </div>
-        <div class="edge-row">
-          <span class="node-box node-fn" style="font-size:10px;padding:3px 8px">routeRequest</span>
-          <span class="edge-arr">──calls──▶</span>
-          <span class="node-box node-fn" style="font-size:10px;padding:3px 8px">handleRequest</span>
-        </div>
-        <div class="edge-row">
-          <span class="node-box node-fn" style="font-size:10px;padding:3px 8px">service.go</span>
-          <span class="edge-arr">─imports─▶</span>
-          <span class="node-box node-type" style="font-size:10px;padding:3px 8px">type User</span>
-        </div>
-        <div style="font-size:11px;color:var(--text-dim);margin:16px 0 8px">FILE METADATA</div>
-        <div class="meta-row">
-          <span style="color:var(--fn)">src/api/handler.ts</span> · <span style="color:var(--accent)">fresh</span><br>
-          <span style="color:var(--fn)">src/db/query.ts</span> · <span style="color:var(--red)">stale</span>
-        </div>
-      </div>
-    </div>
-    <div class="how-steps">
-      <div class="how-step">
-        <div class="step-num">1</div>
-        <div>
-          <div class="step-title">ast-grep parses your codebase</div>
-          <div class="step-body">Tree-sitter powered rules extract symbols and relationships from TypeScript, Go, Python, and Rust — without bundling a parser.</div>
-        </div>
-      </div>
-      <div class="how-step">
-        <div class="step-num">2</div>
-        <div>
-          <div class="step-title">Nodes and edges persist in SQLite</div>
-          <div class="step-body">Every symbol is a node. Every call, import, and type reference is a directed edge. Stored locally in <span class="inline-code">.codeindex/graph.db</span>.</div>
-        </div>
-      </div>
-      <div class="how-step">
-        <div class="step-num">3</div>
-        <div>
-          <div class="step-title">Staleness tracked per file</div>
-          <div class="step-body">SHA-256 hashes detect changes. Every query response includes a <span class="inline-code">stale</span> flag — the agent always knows how fresh the data is.</div>
-        </div>
-      </div>
-      <div class="how-step">
-        <div class="step-num">4</div>
-        <div>
-          <div class="step-title">Query via MCP or CLI</div>
-          <div class="step-body">Any agent that supports MCP connects over stdio. <span class="inline-code">codeindex serve</span> — that's it. Or explore interactively with <span class="inline-code">codeindex tree</span>.</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-</div>
-
-<!-- TOOLS -->
-<div class="section-outer">
-<section id="tools" class="reveal">
-  <div class="section-tag">MCP Tools</div>
-  <h2 class="section-title">Six tools.<br>Replace fifty grep calls.</h2>
-  <div class="tools-grid">
-    <div class="tool-card">
-      <div class="tool-name">get_file_structure</div>
-      <div class="tool-desc">Structural skeleton of a file — exports, functions, classes, types — without reading the source.</div>
-      <div class="tool-strike">reading entire files</div>
-    </div>
-    <div class="tool-card">
-      <div class="tool-name">find_symbol</div>
-      <div class="tool-desc">Locate where any function, type, class, or variable is defined across the entire codebase.</div>
-      <div class="tool-strike">grep -r "function X"</div>
-    </div>
-    <div class="tool-card">
-      <div class="tool-name">get_references</div>
-      <div class="tool-desc">Every file and line that uses a given symbol — with relationship kind: calls, imports, references.</div>
-      <div class="tool-strike">multi-file symbol search</div>
-    </div>
-    <div class="tool-card">
-      <div class="tool-name">get_callers</div>
-      <div class="tool-desc">Trace the call graph upstream from any function. Configurable depth, cycle-safe.</div>
-      <div class="tool-strike">manual call tracing</div>
-    </div>
-    <div class="tool-card">
-      <div class="tool-name">get_subgraph</div>
-      <div class="tool-desc">Bounded neighborhood around any symbol — N hops of nodes and edges. Structural context without reading files.</div>
-      <div class="tool-strike">reading 5–10 files</div>
-    </div>
-    <div class="tool-card">
-      <div class="tool-name">reindex</div>
-      <div class="tool-desc">Re-index a single file in under 100ms, or the full repo incrementally. Call after every edit.</div>
-      <div class="tool-strike">stale data risks</div>
-    </div>
-  </div>
-</section>
-</div>
-
-<!-- TERMINAL DEMO -->
-<div class="section-outer demo-section">
-  <section class="reveal">
-    <div class="section-tag">Live demo</div>
-    <h2 class="section-title">What the agent<br>actually sees.</h2>
-    <div class="demo-layout">
-      <div class="terminal">
-        <div class="terminal-bar">
-          <span class="td td-r"></span>
-          <span class="td td-y"></span>
-          <span class="td td-g"></span>
-          <span class="terminal-title">codeindex serve</span>
-        </div>
-        <div class="terminal-body" id="terminal-body"></div>
-      </div>
-      <div class="demo-features">
-        <div class="demo-feat">
-          <div class="demo-feat-icon">⚡</div>
-          <div>
-            <div class="demo-feat-title">&lt;100ms single-file reindex</div>
-            <div class="demo-feat-body">Hash check + one ast-grep invocation. Fast enough to call after every edit in the agent loop.</div>
+  <!-- HOW IT WORKS -->
+  <div class="section-outer">
+    <section id="how" class="reveal">
+      <div class="section-tag">How it works</div>
+      <h2 class="section-title">Parse once.<br>Query forever.</h2>
+      <div class="how-layout">
+        <div class="how-visual">
+          <div class="v-title">// .codeindex/graph.db</div>
+          <div style="margin-top:8px">
+            <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px">NODES (symbols)</div>
+            <div class="node-row">
+              <span class="node-box node-fn">fn handleRequest</span>
+              <span class="node-box node-fn">fn validateInput</span>
+            </div>
+            <div class="node-row">
+              <span class="node-box node-type">type Request</span>
+              <span class="node-box node-stale">fn oldHelper [stale]</span>
+            </div>
+            <div style="font-size:11px;color:var(--text-dim);margin:16px 0 8px">EDGES (relationships)</div>
+            <div class="edge-row">
+              <span class="node-box node-fn" style="font-size:10px;padding:3px 8px">handleRequest</span>
+              <span class="edge-arr">──calls──▶</span>
+              <span class="node-box node-fn" style="font-size:10px;padding:3px 8px">validateInput</span>
+            </div>
+            <div class="edge-row">
+              <span class="node-box node-fn" style="font-size:10px;padding:3px 8px">routeRequest</span>
+              <span class="edge-arr">──calls──▶</span>
+              <span class="node-box node-fn" style="font-size:10px;padding:3px 8px">handleRequest</span>
+            </div>
+            <div class="edge-row">
+              <span class="node-box node-fn" style="font-size:10px;padding:3px 8px">service.go</span>
+              <span class="edge-arr">─imports─▶</span>
+              <span class="node-box node-type" style="font-size:10px;padding:3px 8px">type User</span>
+            </div>
+            <div style="font-size:11px;color:var(--text-dim);margin:16px 0 8px">FILE METADATA</div>
+            <div class="meta-row">
+              <span style="color:var(--fn)">src/api/handler.ts</span> · <span
+                style="color:var(--accent)">fresh</span><br>
+              <span style="color:var(--fn)">src/db/query.ts</span> · <span style="color:var(--red)">stale</span>
+            </div>
           </div>
         </div>
-        <div class="demo-feat">
-          <div class="demo-feat-icon">🔗</div>
-          <div>
-            <div class="demo-feat-title">MCP stdio — agent agnostic</div>
-            <div class="demo-feat-body">Works with Claude Code, Cursor, Codex, Gemini, OpenCode, Copilot, Cline, and any MCP-compatible agent.</div>
+        <div class="how-steps">
+          <div class="how-step">
+            <div class="step-num">1</div>
+            <div>
+              <div class="step-title">ast-grep parses your codebase</div>
+              <div class="step-body">Tree-sitter powered rules extract symbols and relationships from TypeScript, Go,
+                Python, and Rust — without bundling a parser.</div>
+            </div>
           </div>
-        </div>
-        <div class="demo-feat">
-          <div class="demo-feat-icon">👁</div>
-          <div>
-            <div class="demo-feat-title">Stale flag on every response</div>
-            <div class="demo-feat-body">The agent always knows if the graph data is fresh. No silent staleness.</div>
+          <div class="how-step">
+            <div class="step-num">2</div>
+            <div>
+              <div class="step-title">Nodes and edges persist in SQLite</div>
+              <div class="step-body">Every symbol is a node. Every call, import, and type reference is a directed edge.
+                Stored locally in <span class="inline-code">.codeindex/graph.db</span>.</div>
+            </div>
           </div>
-        </div>
-        <div class="demo-feat">
-          <div class="demo-feat-icon">📡</div>
-          <div>
-            <div class="demo-feat-title">Watch mode</div>
-            <div class="demo-feat-body">
-              <span class="inline-code">codeindex reindex --watch</span> auto-reindexes on save via fsnotify. Hands-free freshness.
+          <div class="how-step">
+            <div class="step-num">3</div>
+            <div>
+              <div class="step-title">Staleness tracked per file</div>
+              <div class="step-body">SHA-256 hashes detect changes. Every query response includes a <span
+                  class="inline-code">stale</span> flag — the agent always knows how fresh the data is.</div>
+            </div>
+          </div>
+          <div class="how-step">
+            <div class="step-num">4</div>
+            <div>
+              <div class="step-title">Query via MCP or CLI</div>
+              <div class="step-body">Any agent that supports MCP connects over stdio. <span
+                  class="inline-code">codeindex serve</span> — that's it. Or explore interactively with <span
+                  class="inline-code">codeindex tree</span>.</div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  </section>
-</div>
-
-<!-- LANGUAGES -->
-<div class="section-outer">
-<section id="languages" class="reveal">
-  <div class="section-tag">Languages</div>
-  <h2 class="section-title">Four languages.<br>One graph.</h2>
-  <p class="section-body">Auto-detected from project markers. More coming — powered by ast-grep's tree-sitter rules.</p>
-  <div class="langs-row">
-    <div class="lang-card">
-      <i class="fa-brands fa-typescript lang-icon" aria-hidden="true"></i>
-      <div class="lang-name">TypeScript</div>
-      <div class="lang-detect">tsconfig.json · package.json</div>
-    </div>
-    <div class="lang-card">
-      <i class="fa-brands fa-golang lang-icon" aria-hidden="true"></i>
-      <div class="lang-name">Go</div>
-      <div class="lang-detect">go.mod</div>
-    </div>
-    <div class="lang-card">
-      <i class="fa-brands fa-python lang-icon" aria-hidden="true"></i>
-      <div class="lang-name">Python</div>
-      <div class="lang-detect">pyproject.toml · setup.py</div>
-    </div>
-    <div class="lang-card">
-      <i class="fa-brands fa-rust lang-icon" aria-hidden="true"></i>
-      <div class="lang-name">Rust</div>
-      <div class="lang-detect">Cargo.toml</div>
-    </div>
-  </div>
-</section>
-</div>
-
-<!-- INSTALL -->
-<div class="section-outer">
-<section id="install" class="install-section reveal">
-  <div class="section-tag">Install</div>
-  <h2 class="section-title">Two ways in.</h2>
-  <p class="section-body" style="margin:0 auto">
-    Single static binary. No runtime deps. Requires
-    <a href="https://ast-grep.github.io/guide/quick-start.html" style="color:var(--accent);text-decoration:none">ast-grep</a> in PATH.
-  </p>
-  <div class="install-methods">
-    <div class="install-method">
-      <div class="install-method-title">Homebrew</div>
-      <div class="install-method-desc">macOS + Linux. Recommended.</div>
-      <div class="code-block">brew install 01x-in/tap/codeindex</div>
-    </div>
-    <div class="install-method">
-      <div class="install-method-title">go install</div>
-      <div class="install-method-desc">Requires Go 1.22+</div>
-      <div class="code-block">go install github.com/01x-in/codeindex/cmd/codeindex@latest</div>
-    </div>
+    </section>
   </div>
 
-  <div class="quickstart reveal">
-    <div class="qs-label">Quick start</div>
-    <span class="qs-line"><span class="qs-comment"># 1. index your repo</span></span>
-    <span class="qs-line" style="color:var(--accent)">codeindex init</span>
-    <span class="qs-line"><span class="qs-comment"># 2. start the MCP server</span></span>
-    <span class="qs-line" style="color:var(--accent)">codeindex serve</span>
-    <span class="qs-line"><span class="qs-comment"># 3. add to your agent's MCP config</span></span>
-    <span class="qs-line" style="color:var(--text-dim)">"command": "codeindex", "args": ["serve"]</span>
+  <!-- TOOLS -->
+  <div class="section-outer">
+    <section id="tools" class="reveal">
+      <div class="section-tag">MCP Tools</div>
+      <h2 class="section-title">Six tools.<br>Replace fifty grep calls.</h2>
+      <div class="tools-grid">
+        <div class="tool-card">
+          <div class="tool-name">get_file_structure</div>
+          <div class="tool-desc">Structural skeleton of a file — exports, functions, classes, types — without reading
+            the source.</div>
+          <div class="tool-strike">reading entire files</div>
+        </div>
+        <div class="tool-card">
+          <div class="tool-name">find_symbol</div>
+          <div class="tool-desc">Locate where any function, type, class, or variable is defined across the entire
+            codebase.</div>
+          <div class="tool-strike">grep -r "function X"</div>
+        </div>
+        <div class="tool-card">
+          <div class="tool-name">get_references</div>
+          <div class="tool-desc">Every file and line that uses a given symbol — with relationship kind: calls, imports,
+            references.</div>
+          <div class="tool-strike">multi-file symbol search</div>
+        </div>
+        <div class="tool-card">
+          <div class="tool-name">get_callers</div>
+          <div class="tool-desc">Trace the call graph upstream from any function. Configurable depth, cycle-safe.</div>
+          <div class="tool-strike">manual call tracing</div>
+        </div>
+        <div class="tool-card">
+          <div class="tool-name">get_subgraph</div>
+          <div class="tool-desc">Bounded neighborhood around any symbol — N hops of nodes and edges. Structural context
+            without reading files.</div>
+          <div class="tool-strike">reading 5–10 files</div>
+        </div>
+        <div class="tool-card">
+          <div class="tool-name">reindex</div>
+          <div class="tool-desc">Re-index a single file in under 100ms, or the full repo incrementally. Call after every
+            edit.</div>
+          <div class="tool-strike">stale data risks</div>
+        </div>
+      </div>
+    </section>
   </div>
-</section>
-</div>
 
-<div class="section-outer section-outer--footer">
-<footer>
-  <div>
-    <div class="footer-logo">codeindex</div>
-    <div class="footer-copy">MIT License · Built by <a href="https://01x.in">01x</a></div>
+  <!-- TERMINAL DEMO -->
+  <div class="section-outer demo-section">
+    <section class="reveal">
+      <div class="section-tag">Live demo</div>
+      <h2 class="section-title">What the agent<br>actually sees.</h2>
+      <div class="demo-layout">
+        <div class="terminal">
+          <div class="terminal-bar">
+            <span class="td td-r"></span>
+            <span class="td td-y"></span>
+            <span class="td td-g"></span>
+            <span class="terminal-title">codeindex serve</span>
+          </div>
+          <div class="terminal-body" id="terminal-body"></div>
+        </div>
+        <div class="demo-features">
+          <div class="demo-feat">
+            <div class="demo-feat-icon">⚡</div>
+            <div>
+              <div class="demo-feat-title">&lt;100ms single-file reindex</div>
+              <div class="demo-feat-body">Hash check + one ast-grep invocation. Fast enough to call after every edit in
+                the agent loop.</div>
+            </div>
+          </div>
+          <div class="demo-feat">
+            <div class="demo-feat-icon">🔗</div>
+            <div>
+              <div class="demo-feat-title">MCP stdio — agent agnostic</div>
+              <div class="demo-feat-body">Works with Claude Code, Cursor, Codex, Gemini, OpenCode, Copilot, Cline, and
+                any MCP-compatible agent.</div>
+            </div>
+          </div>
+          <div class="demo-feat">
+            <div class="demo-feat-icon">👁</div>
+            <div>
+              <div class="demo-feat-title">Stale flag on every response</div>
+              <div class="demo-feat-body">The agent always knows if the graph data is fresh. No silent staleness.</div>
+            </div>
+          </div>
+          <div class="demo-feat">
+            <div class="demo-feat-icon">📡</div>
+            <div>
+              <div class="demo-feat-title">Watch mode</div>
+              <div class="demo-feat-body">
+                <span class="inline-code">codeindex reindex --watch</span> auto-reindexes on save via fsnotify.
+                Hands-free freshness.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   </div>
-  <div class="footer-links">
-    <a href="https://github.com/01x-in/codeindex">GitHub</a>
-    <a href="https://github.com/01x-in/codeindex/issues">Issues</a>
-    <a href="https://github.com/01x-in/codeindex/releases">Releases</a>
-    <a href="https://ast-grep.github.io">ast-grep</a>
+
+  <!-- LANGUAGES -->
+  <div class="section-outer">
+    <section id="languages" class="reveal">
+      <div class="section-tag">Languages</div>
+      <h2 class="section-title">Four languages.<br>One graph.</h2>
+      <p class="section-body">Auto-detected from project markers. More coming — powered by ast-grep's tree-sitter rules.
+      </p>
+      <div class="langs-row">
+        <div class="lang-card">
+          <i class="fa-brands fa-typescript lang-icon" aria-hidden="true"></i>
+          <div class="lang-name">TypeScript</div>
+          <div class="lang-detect">tsconfig.json · package.json</div>
+        </div>
+        <div class="lang-card">
+          <i class="fa-brands fa-golang lang-icon" aria-hidden="true"></i>
+          <div class="lang-name">Go</div>
+          <div class="lang-detect">go.mod</div>
+        </div>
+        <div class="lang-card">
+          <i class="fa-brands fa-python lang-icon" aria-hidden="true"></i>
+          <div class="lang-name">Python</div>
+          <div class="lang-detect">pyproject.toml · setup.py</div>
+        </div>
+        <div class="lang-card">
+          <i class="fa-brands fa-rust lang-icon" aria-hidden="true"></i>
+          <div class="lang-name">Rust</div>
+          <div class="lang-detect">Cargo.toml</div>
+        </div>
+      </div>
+    </section>
   </div>
-</footer>
-</div>
 
-<script>
-  // ── copy install command ──
-  function copyInstall() {
-    const text = document.getElementById('install-text').textContent;
-    navigator.clipboard.writeText(text).then(function() {
-      var btn = document.getElementById('copy-btn');
-      btn.textContent = 'copied!';
-      btn.style.color = 'var(--accent)';
-      setTimeout(function() { btn.textContent = 'copy'; btn.style.color = ''; }, 1500);
+  <!-- INSTALL -->
+  <div class="section-outer">
+    <section id="install" class="install-section reveal">
+      <div class="section-tag">Install</div>
+      <h2 class="section-title">Two ways in.</h2>
+      <p class="section-body" style="margin:0 auto">
+        Single static binary. No runtime deps. Requires
+        <a href="https://ast-grep.github.io/guide/quick-start.html"
+          style="color:var(--accent);text-decoration:none">ast-grep</a> in PATH.
+      </p>
+      <div class="install-methods">
+        <div class="install-method">
+          <div class="install-method-title">Homebrew</div>
+          <div class="install-method-desc">macOS + Linux. Recommended.</div>
+          <div class="code-block">brew install 01x-in/tap/codeindex</div>
+        </div>
+        <div class="install-method">
+          <div class="install-method-title">go install</div>
+          <div class="install-method-desc">Requires Go 1.22+</div>
+          <div class="code-block">go install github.com/01x-in/codeindex/cmd/codeindex@latest</div>
+        </div>
+      </div>
+
+      <div class="quickstart reveal">
+        <div class="qs-label">Quick start</div>
+        <span class="qs-line"><span class="qs-comment"># 1. index your repo</span></span>
+        <span class="qs-line" style="color:var(--accent)">codeindex init</span>
+        <span class="qs-line"><span class="qs-comment"># 2. start the MCP server</span></span>
+        <span class="qs-line" style="color:var(--accent)">codeindex serve</span>
+        <span class="qs-line"><span class="qs-comment"># 3. add to your agent's MCP config</span></span>
+        <span class="qs-line" style="color:var(--text-dim)">"command": "codeindex", "args": ["serve"]</span>
+      </div>
+    </section>
+  </div>
+
+  <div class="section-outer section-outer--footer">
+    <footer>
+      <div>
+        <div class="footer-logo">codeindex</div>
+        <div class="footer-copy">MIT License · Built by <a href="https://01x.in">01x</a></div>
+      </div>
+      <div class="footer-links">
+        <a href="https://github.com/01x-in/codeindex">GitHub</a>
+        <a href="https://github.com/01x-in/codeindex/issues">Issues</a>
+        <a href="https://github.com/01x-in/codeindex/releases">Releases</a>
+        <a href="https://ast-grep.github.io">ast-grep</a>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    // ── copy install command ──
+    function copyInstall() {
+      const text = document.getElementById('install-text').textContent;
+      navigator.clipboard.writeText(text).then(function () {
+        var btn = document.getElementById('copy-btn');
+        btn.textContent = 'copied!';
+        btn.style.color = 'var(--accent)';
+        setTimeout(function () { btn.textContent = 'copy'; btn.style.color = ''; }, 1500);
+      });
+    }
+
+    // ── animate graph edges ──
+    document.querySelectorAll('#graph-edges line').forEach(function (line, i) {
+      var len = 300;
+      line.style.strokeDasharray = String(len);
+      line.style.strokeDashoffset = String(len);
+      line.style.transition = 'stroke-dashoffset 0.8s ease ' + (0.4 + i * 0.1) + 's';
+      requestAnimationFrame(function () {
+        line.style.strokeDashoffset = '0';
+      });
     });
-  }
 
-  // ── animate graph edges ──
-  document.querySelectorAll('#graph-edges line').forEach(function(line, i) {
-    var len = 300;
-    line.style.strokeDasharray = String(len);
-    line.style.strokeDashoffset = String(len);
-    line.style.transition = 'stroke-dashoffset 0.8s ease ' + (0.4 + i * 0.1) + 's';
-    requestAnimationFrame(function() {
-      line.style.strokeDashoffset = '0';
+    // ── animate graph nodes ──
+    document.querySelectorAll('.gnode').forEach(function (node) {
+      var delay = parseInt(node.getAttribute('data-delay') || '0', 10);
+      node.style.opacity = '0';
+      node.style.transition = 'opacity 0.4s ease ' + ((delay + 700) / 1000) + 's';
+      requestAnimationFrame(function () {
+        node.style.opacity = '1';
+      });
     });
-  });
 
-  // ── animate graph nodes ──
-  document.querySelectorAll('.gnode').forEach(function(node) {
-    var delay = parseInt(node.getAttribute('data-delay') || '0', 10);
-    node.style.opacity = '0';
-    node.style.transition = 'opacity 0.4s ease ' + ((delay + 700) / 1000) + 's';
-    requestAnimationFrame(function() {
-      node.style.opacity = '1';
-    });
-  });
+    // ── terminal animation using safe DOM methods only ──
+    (function () {
+      var body = document.getElementById('terminal-body');
+      if (!body) return;
 
-  // ── terminal animation using safe DOM methods only ──
-  (function() {
-    var body = document.getElementById('terminal-body');
-    if (!body) return;
+      // Build cursor element
+      var cursor = document.createElement('span');
+      cursor.className = 'cursor';
+      body.appendChild(cursor);
 
-    // Build cursor element
-    var cursor = document.createElement('span');
-    cursor.className = 'cursor';
-    body.appendChild(cursor);
+      // Each entry: segments array of {text, cls} pairs; delay in ms
+      var frames = [
+        { delay: 0, segs: [{ t: '$ ', c: 't-prompt' }, { t: 'codeindex init', c: 't-cmd' }] },
+        { delay: 700, segs: [{ t: 'Detected languages:', c: 't-dim' }] },
+        { delay: 900, segs: [{ t: '  - typescript', c: 't-str' }, { t: ' (tsconfig.json)', c: 't-dim' }] },
+        { delay: 1050, segs: [{ t: '  - go', c: 't-str' }, { t: ' (go.mod)', c: 't-dim' }] },
+        { delay: 1200, segs: [{ t: 'Indexed 142 files in 2.1s', c: 't-dim' }] },
+        { delay: 1500, segs: [{ t: '', c: '' }] },
+        { delay: 1700, segs: [{ t: '$ ', c: 't-prompt' }, { t: 'get_file_structure src/api/handler.ts', c: 't-cmd' }] },
+        { delay: 2100, segs: [{ t: '{', c: 't-dim' }] },
+        { delay: 2180, segs: [{ t: '  ', c: '' }, { t: '"file"', c: 't-key' }, { t: ': ', c: 't-dim' }, { t: '"src/api/handler.ts"', c: 't-str' }, { t: ',', c: 't-dim' }] },
+        { delay: 2240, segs: [{ t: '  ', c: '' }, { t: '"stale"', c: 't-key' }, { t: ': ', c: 't-dim' }, { t: 'false', c: 't-true' }, { t: ',', c: 't-dim' }] },
+        { delay: 2300, segs: [{ t: '  ', c: '' }, { t: '"symbols"', c: 't-key' }, { t: ': [', c: 't-dim' }] },
+        { delay: 2360, segs: [{ t: '    { ', c: 't-dim' }, { t: '"name"', c: 't-key' }, { t: ': ', c: 't-dim' }, { t: '"handleRequest"', c: 't-str' }, { t: ', ', c: 't-dim' }, { t: '"kind"', c: 't-key' }, { t: ': ', c: 't-dim' }, { t: '"fn"', c: 't-str' }, { t: ', ', c: 't-dim' }, { t: '"line"', c: 't-key' }, { t: ': ', c: 't-dim' }, { t: '24', c: 't-num' }, { t: ', ', c: 't-dim' }, { t: '"exported"', c: 't-key' }, { t: ': ', c: 't-dim' }, { t: 'true', c: 't-true' }, { t: ' }', c: 't-dim' }] },
+        { delay: 2460, segs: [{ t: '    { ', c: 't-dim' }, { t: '"name"', c: 't-key' }, { t: ': ', c: 't-dim' }, { t: '"validateHeaders"', c: 't-str' }, { t: ', ', c: 't-dim' }, { t: '"kind"', c: 't-key' }, { t: ': ', c: 't-dim' }, { t: '"fn"', c: 't-str' }, { t: ', ', c: 't-dim' }, { t: '"exported"', c: 't-key' }, { t: ': ', c: 't-dim' }, { t: 'false', c: 't-false' }, { t: ' }', c: 't-dim' }] },
+        { delay: 2540, segs: [{ t: '  ]', c: 't-dim' }] },
+        { delay: 2590, segs: [{ t: '}', c: 't-dim' }] },
+        { delay: 2750, segs: [{ t: '', c: '' }] },
+        { delay: 2950, segs: [{ t: '$ ', c: 't-prompt' }, { t: 'get_callers handleRequest --depth 3', c: 't-cmd' }] },
+        { delay: 3350, segs: [{ t: '  routeRequest', c: 't-fn-c' }, { t: '   src/routes/index.ts:12', c: 't-dim' }] },
+        { delay: 3500, segs: [{ t: '    startServer', c: 't-fn-c' }, { t: '  src/server.ts:5', c: 't-dim' }] },
+        { delay: 3650, segs: [{ t: '  processWebhook', c: 't-fn-c' }, { t: ' src/webhooks.ts:31', c: 't-dim' }] },
+      ];
 
-    // Each entry: segments array of {text, cls} pairs; delay in ms
-    var frames = [
-      { delay: 0,    segs: [{t:'$ ',c:'t-prompt'},{t:'codeindex init',c:'t-cmd'}] },
-      { delay: 700,  segs: [{t:'Detected languages:',c:'t-dim'}] },
-      { delay: 900,  segs: [{t:'  - typescript',c:'t-str'},{t:' (tsconfig.json)',c:'t-dim'}] },
-      { delay: 1050, segs: [{t:'  - go',c:'t-str'},{t:' (go.mod)',c:'t-dim'}] },
-      { delay: 1200, segs: [{t:'Indexed 142 files in 2.1s',c:'t-dim'}] },
-      { delay: 1500, segs: [{t:'',c:''}] },
-      { delay: 1700, segs: [{t:'$ ',c:'t-prompt'},{t:'get_file_structure src/api/handler.ts',c:'t-cmd'}] },
-      { delay: 2100, segs: [{t:'{',c:'t-dim'}] },
-      { delay: 2180, segs: [{t:'  ',c:''},{t:'"file"',c:'t-key'},{t:': ',c:'t-dim'},{t:'"src/api/handler.ts"',c:'t-str'},{t:',',c:'t-dim'}] },
-      { delay: 2240, segs: [{t:'  ',c:''},{t:'"stale"',c:'t-key'},{t:': ',c:'t-dim'},{t:'false',c:'t-true'},{t:',',c:'t-dim'}] },
-      { delay: 2300, segs: [{t:'  ',c:''},{t:'"symbols"',c:'t-key'},{t:': [',c:'t-dim'}] },
-      { delay: 2360, segs: [{t:'    { ',c:'t-dim'},{t:'"name"',c:'t-key'},{t:': ',c:'t-dim'},{t:'"handleRequest"',c:'t-str'},{t:', ',c:'t-dim'},{t:'"kind"',c:'t-key'},{t:': ',c:'t-dim'},{t:'"fn"',c:'t-str'},{t:', ',c:'t-dim'},{t:'"line"',c:'t-key'},{t:': ',c:'t-dim'},{t:'24',c:'t-num'},{t:', ',c:'t-dim'},{t:'"exported"',c:'t-key'},{t:': ',c:'t-dim'},{t:'true',c:'t-true'},{t:' }',c:'t-dim'}] },
-      { delay: 2460, segs: [{t:'    { ',c:'t-dim'},{t:'"name"',c:'t-key'},{t:': ',c:'t-dim'},{t:'"validateHeaders"',c:'t-str'},{t:', ',c:'t-dim'},{t:'"kind"',c:'t-key'},{t:': ',c:'t-dim'},{t:'"fn"',c:'t-str'},{t:', ',c:'t-dim'},{t:'"exported"',c:'t-key'},{t:': ',c:'t-dim'},{t:'false',c:'t-false'},{t:' }',c:'t-dim'}] },
-      { delay: 2540, segs: [{t:'  ]',c:'t-dim'}] },
-      { delay: 2590, segs: [{t:'}',c:'t-dim'}] },
-      { delay: 2750, segs: [{t:'',c:''}] },
-      { delay: 2950, segs: [{t:'$ ',c:'t-prompt'},{t:'get_callers handleRequest --depth 3',c:'t-cmd'}] },
-      { delay: 3350, segs: [{t:'  routeRequest',c:'t-fn-c'},{t:'   src/routes/index.ts:12',c:'t-dim'}] },
-      { delay: 3500, segs: [{t:'    startServer',c:'t-fn-c'},{t:'  src/server.ts:5',c:'t-dim'}] },
-      { delay: 3650, segs: [{t:'  processWebhook',c:'t-fn-c'},{t:' src/webhooks.ts:31',c:'t-dim'}] },
-    ];
+      frames.forEach(function (frame) {
+        setTimeout(function () {
+          var line = document.createElement('span');
+          line.className = 't-line';
+          frame.segs.forEach(function (seg) {
+            if (!seg.t) return;
+            var s = document.createElement('span');
+            if (seg.c) s.className = seg.c;
+            s.textContent = seg.t;
+            line.appendChild(s);
+          });
+          body.insertBefore(line, cursor);
+          body.scrollTop = body.scrollHeight;
+        }, frame.delay);
+      });
+    }());
 
-    frames.forEach(function(frame) {
-      setTimeout(function() {
-        var line = document.createElement('span');
-        line.className = 't-line';
-        frame.segs.forEach(function(seg) {
-          if (!seg.t) return;
-          var s = document.createElement('span');
-          if (seg.c) s.className = seg.c;
-          s.textContent = seg.t;
-          line.appendChild(s);
-        });
-        body.insertBefore(line, cursor);
-        body.scrollTop = body.scrollHeight;
-      }, frame.delay);
-    });
-  }());
-
-  // ── scroll reveal ──
-  var revealObserver = new IntersectionObserver(function(entries) {
-    entries.forEach(function(e) {
-      if (e.isIntersecting) {
-        e.target.classList.add('visible');
-        revealObserver.unobserve(e.target);
-      }
-    });
-  }, { threshold: 0.1 });
-
-  document.querySelectorAll('.reveal').forEach(function(el) { revealObserver.observe(el); });
-
-  // ── keyboard section navigation ──
-  (function() {
-    var snapSections = Array.from(document.querySelectorAll('.hero, .section-outer'));
-    var current = 0;
-
-    // Track current section via IntersectionObserver
-    var sectionObserver = new IntersectionObserver(function(entries) {
-      entries.forEach(function(e) {
+    // ── scroll reveal ──
+    var revealObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
         if (e.isIntersecting) {
-          var idx = snapSections.indexOf(e.target);
-          if (idx !== -1) current = idx;
+          e.target.classList.add('visible');
+          revealObserver.unobserve(e.target);
         }
       });
-    }, { threshold: 0.2, rootMargin: '-10% 0px -10% 0px' });
+    }, { threshold: 0.1 });
 
-    snapSections.forEach(function(s) { sectionObserver.observe(s); });
+    document.querySelectorAll('.reveal').forEach(function (el) { revealObserver.observe(el); });
 
-    document.addEventListener('keydown', function(e) {
-      var down = e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ';
-      var up   = e.key === 'ArrowUp'   || e.key === 'PageUp';
-      if (!down && !up) return;
+    // ── keyboard section navigation ──
+    (function () {
+      var snapSections = Array.from(document.querySelectorAll('.hero, .section-outer'));
+      var current = 0;
 
-      // Only intercept when not focused inside a scrollable child
-      var active = document.activeElement;
-      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) return;
+      // Track current section via IntersectionObserver
+      var sectionObserver = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) {
+            var idx = snapSections.indexOf(e.target);
+            if (idx !== -1) current = idx;
+          }
+        });
+      }, { threshold: 0.2, rootMargin: '-10% 0px -10% 0px' });
 
-      e.preventDefault();
-      if (down) current = Math.min(current + 1, snapSections.length - 1);
-      if (up)   current = Math.max(current - 1, 0);
-      snapSections[current].scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
-  }());
-</script>
+      snapSections.forEach(function (s) { sectionObserver.observe(s); });
+
+      document.addEventListener('keydown', function (e) {
+        var down = e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ';
+        var up = e.key === 'ArrowUp' || e.key === 'PageUp';
+        if (!down && !up) return;
+
+        // Only intercept when not focused inside a scrollable child
+        var active = document.activeElement;
+        if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) return;
+
+        e.preventDefault();
+        if (down) current = Math.min(current + 1, snapSections.length - 1);
+        if (up) current = Math.max(current - 1, 0);
+        snapSections[current].scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }());
+  </script>
 </body>
+
 </html>
