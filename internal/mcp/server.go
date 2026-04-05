@@ -54,6 +54,10 @@ func (s *Server) ServeWithIO(reader io.Reader, writer io.Writer) error {
 			continue
 		}
 
+		// JSON-RPC 2.0: notifications have no id — must not send a response.
+		if req.ID == nil {
+			continue
+		}
 		resp := s.handleRequest(req)
 		if err := s.transport.WriteResponse(resp); err != nil {
 			return fmt.Errorf("writing response: %w", err)
@@ -69,6 +73,8 @@ func (s *Server) handleRequest(req JSONRPCRequest) JSONRPCResponse {
 		return s.handleToolsList(req)
 	case "tools/call":
 		return s.handleToolsCall(req)
+	case "ping":
+		return JSONRPCResponse{JSONRPC: "2.0", ID: req.ID, Result: map[string]interface{}{}}
 	default:
 		return JSONRPCResponse{
 			JSONRPC: "2.0",

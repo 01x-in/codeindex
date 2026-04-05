@@ -132,7 +132,10 @@ func RunInit(dir string, yes bool, stdin *os.File, stdout, stderr interface{ Wri
 		return nil
 	}
 	if err := indexer.CheckInstalled(); err != nil {
-		fmt.Fprintf(stdout, "Skipping initial index: %v\n", err)
+		fmt.Fprintln(stdout, "\nast-grep not found — initial index skipped.")
+		fmt.Fprintln(stdout, "  Install: https://ast-grep.github.io/guide/quick-start.html")
+		fmt.Fprintln(stdout, "  Then run: codeindex reindex")
+		printMCPHint(stdout)
 		return nil
 	}
 	dbPath := filepath.Join(dir, cfg.IndexPath, "graph.db")
@@ -154,7 +157,16 @@ func RunInit(dir string, yes bool, stdin *os.File, stdout, stderr interface{ Wri
 		return fmt.Errorf("initial index: %w", err)
 	}
 
+	printMCPHint(stdout)
 	return nil
+}
+
+// printMCPHint prints MCP registration instructions. codeindex serve is a subprocess
+// launched by the agent — users should register it in their agent config, not run it manually.
+func printMCPHint(stdout interface{ Write([]byte) (int, error) }) {
+	fmt.Fprintln(stdout, "\nRegister with your AI agent (codeindex serve runs as a subprocess — no manual terminal needed):")
+	fmt.Fprintln(stdout, "  Claude Code:  claude mcp add codeindex -- codeindex serve")
+	fmt.Fprintln(stdout, "  Other agents: add {\"command\":\"codeindex\",\"args\":[\"serve\"]} to your MCP config")
 }
 
 // ensureGitignore adds the index path to .gitignore if not already present.
