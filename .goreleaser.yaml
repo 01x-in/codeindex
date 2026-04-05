@@ -22,11 +22,11 @@ builds:
       - -s -w -X github.com/01x/codeindex/internal/cli.Version={{.Version}}
 
 archives:
-  - format: tar.gz
+  - formats: [tar.gz]
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     format_overrides:
       - goos: windows
-        format: zip
+        formats: [zip]
 
 checksum:
   name_template: "checksums.txt"
@@ -36,14 +36,11 @@ release:
     owner: 01x-in
     name: codeindex
 
-brews:
+homebrew_casks:
   - name: codeindex
+    binaries: [codeindex]
     repository:
       owner: 01x-in
       name: homebrew-tap
     homepage: "https://github.com/01x-in/codeindex"
     description: "Persistent structural knowledge graph for codebases — MCP tools + CLI tree explorer"
-    install: |
-      bin.install "codeindex"
-    test: |
-      assert_match "codeindex", shell_output("#{bin}/codeindex version")
