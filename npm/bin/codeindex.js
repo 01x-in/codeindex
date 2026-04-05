@@ -9,7 +9,7 @@ const { existsSync, mkdirSync, chmodSync, unlinkSync } = require('fs');
 const os = require('os');
 const path = require('path');
 
-const VERSION = '0.1.0';
+const VERSION = '0.1.2';
 const REPO = '01x-in/codeindex';
 
 function getPlatform(platform, arch) {

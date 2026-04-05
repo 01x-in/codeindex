@@ -1,7 +1,7 @@
 class Codeindex < Formula
   desc "Persistent structural knowledge graph for codebases — MCP tools + CLI tree explorer"
   homepage "https://github.com/01x-in/codeindex"
-  version "0.1.0"
+  version "0.1.2"
 
   on_macos do
     if Hardware::CPU.arm?
