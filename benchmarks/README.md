@@ -5,16 +5,15 @@ Real-world performance of codeindex on large open-source repos — index build t
 ## Run it yourself
 
 ```sh
-# Prerequisites: codeindex and ast-grep in PATH
+# Prerequisites: ast-grep in PATH
 brew install ast-grep
-go install github.com/01x-in/codeindex@latest   # or: use the local binary
 
-# Run against any repo
+# By default the script builds and uses the current checkout
 ./benchmarks/script.sh https://github.com/vercel/next.js createServer
 ./benchmarks/script.sh https://github.com/kubernetes/kubernetes NewController
 ./benchmarks/script.sh https://github.com/microsoft/vscode registerCommand
 
-# Override the binary (e.g. use a local build)
+# Override the binary explicitly if needed
 CODEINDEX_BIN=./bin/codeindex ./benchmarks/script.sh https://github.com/vercel/next.js createServer
 ```
 

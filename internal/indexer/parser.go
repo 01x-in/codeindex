@@ -4,6 +4,7 @@ import (
 	"regexp"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 
 	"github.com/01x/codeindex/internal/graph"
 )
@@ -579,16 +580,188 @@ func isGoExported(name string) bool {
 
 // extractFunctionSignature extracts the parameter and return type signature (TypeScript).
 func extractFunctionSignature(text string) string {
-	idx := strings.Index(text, "(")
-	if idx < 0 {
+	start := strings.Index(text, "(")
+	if start < 0 {
 		return ""
 	}
-	braceIdx := strings.Index(text, "{")
-	if braceIdx < 0 {
-		braceIdx = len(text)
+
+	paramEnd := findMatchingDelimiter(text, start, '(', ')')
+	if paramEnd < 0 {
+		return strings.TrimSpace(text[start:])
 	}
-	sig := strings.TrimSpace(text[idx:braceIdx])
-	return sig
+
+	bodyStart := findFunctionBodyStart(text, paramEnd+1)
+	if bodyStart < 0 {
+		bodyStart = len(text)
+	}
+
+	return strings.TrimSpace(text[start:bodyStart])
+}
+
+func findMatchingDelimiter(text string, start int, open byte, close byte) int {
+	depth := 0
+
+	for i := start; i < len(text); i++ {
+		switch text[i] {
+		case '\'', '"', '`':
+			var next int
+			next, _ = skipQuotedLiteral(text, i)
+			i = next - 1
+		case open:
+			depth++
+		case close:
+			depth--
+			if depth == 0 {
+				return i
+			}
+		}
+	}
+
+	return -1
+}
+
+func findFunctionBodyStart(text string, start int) int {
+	parenDepth := 0
+	bracketDepth := 0
+	angleDepth := 0
+	braceDepth := 0
+	lastWord := ""
+	lastToken := ""
+	inReturnType := false
+
+	for i := start; i < len(text); {
+		ch := text[i]
+
+		if ch == '\'' || ch == '"' || ch == '`' {
+			next, _ := skipQuotedLiteral(text, i)
+			i = next
+			continue
+		}
+
+		if unicode.IsSpace(rune(ch)) {
+			i++
+			continue
+		}
+
+		if isIdentifierStart(ch) {
+			j := i + 1
+			for j < len(text) && isIdentifierPart(text[j]) {
+				j++
+			}
+			lastWord = text[i:j]
+			lastToken = lastWord
+			i = j
+			continue
+		}
+
+		switch ch {
+		case ':':
+			inReturnType = true
+			lastToken = ":"
+		case '(':
+			parenDepth++
+			lastToken = "("
+		case ')':
+			if parenDepth > 0 {
+				parenDepth--
+			}
+			lastToken = ")"
+		case '[':
+			bracketDepth++
+			lastToken = "["
+		case ']':
+			if bracketDepth > 0 {
+				bracketDepth--
+			}
+			lastToken = "]"
+		case '<':
+			angleDepth++
+			lastToken = "<"
+		case '>':
+			if lastToken == "=" {
+				lastToken = "=>"
+				i++
+				continue
+			}
+			if angleDepth > 0 {
+				angleDepth--
+			}
+			lastToken = ">"
+		case '=':
+			lastToken = "="
+		case ',':
+			lastToken = ","
+		case '&':
+			lastToken = "&"
+		case '|':
+			lastToken = "|"
+		case '{':
+			if parenDepth == 0 && bracketDepth == 0 && angleDepth == 0 && braceDepth == 0 {
+				if !inReturnType || !startsTypeLiteral(lastToken, lastWord) {
+					return i
+				}
+			}
+			braceDepth++
+			lastToken = "{"
+		case '}':
+			if braceDepth > 0 {
+				braceDepth--
+			}
+			lastToken = "}"
+		default:
+			lastToken = string(ch)
+		}
+
+		i++
+	}
+
+	return -1
+}
+
+func startsTypeLiteral(lastToken string, lastWord string) bool {
+	switch lastToken {
+	case ":", "|", "&", ",", "=>", "=", "(", "[", "<":
+		return true
+	}
+
+	switch lastWord {
+	case "is", "extends", "infer":
+		return true
+	}
+
+	return false
+}
+
+func skipQuotedLiteral(text string, start int) (int, bool) {
+	quote := text[start]
+	escaped := false
+
+	for i := start + 1; i < len(text); i++ {
+		ch := text[i]
+		if escaped {
+			escaped = false
+			continue
+		}
+		if ch == '\\' {
+			escaped = true
+			continue
+		}
+		if ch == quote {
+			return i + 1, true
+		}
+	}
+
+	return len(text), false
+}
+
+func isIdentifierStart(ch byte) bool {
+	r, _ := utf8.DecodeRune([]byte{ch})
+	return ch == '_' || unicode.IsLetter(r)
+}
+
+func isIdentifierPart(ch byte) bool {
+	r, _ := utf8.DecodeRune([]byte{ch})
+	return ch == '_' || unicode.IsLetter(r) || unicode.IsDigit(r)
 }
 
 // extractGoFunctionSignature extracts the Go function signature from the declaration text.
