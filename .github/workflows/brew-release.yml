@@ -16,6 +16,15 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.24'
+      - name: Verify tap token access
+        run: |
+          test -n "$HOMEBREW_TAP_TOKEN"
+          curl -f -sS \
+            -H "Authorization: Bearer $HOMEBREW_TAP_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/01x-in/homebrew-tap > /dev/null
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
       - uses: goreleaser/goreleaser-action@v6
         with:
           version: latest
