@@ -367,11 +367,15 @@ func resolveSource(input string) (resolvedSource, error) {
 	if !info.IsDir() {
 		return resolvedSource{}, fmt.Errorf("local path must be a directory: %s", absPath)
 	}
+	canonicalPath, err := filepath.EvalSymlinks(absPath)
+	if err != nil {
+		return resolvedSource{}, fmt.Errorf("canonicalizing local path %s: %w", absPath, err)
+	}
 
 	return resolvedSource{
 		kind:     SourceKindLocal,
 		original: filepath.Clean(absPath),
-		local:    absPath,
+		local:    canonicalPath,
 		repoName: sanitizeRepoName(filepath.Base(absPath)),
 	}, nil
 }
@@ -386,6 +390,11 @@ func cloneRepo(remote string, dst string) error {
 }
 
 func copyLocalRepo(src string, dst string) error {
+	canonicalSrc, err := canonicalizeExistingPath(src)
+	if err != nil {
+		return err
+	}
+
 	ignoreDirs := map[string]bool{
 		".codeindex": true,
 	}
@@ -397,12 +406,12 @@ func copyLocalRepo(src string, dst string) error {
 		return fmt.Errorf("creating workspace: %w", err)
 	}
 
-	return filepath.WalkDir(src, func(path string, d fs.DirEntry, walkErr error) error {
+	return filepath.WalkDir(canonicalSrc, func(path string, d fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
 		}
 
-		rel, err := filepath.Rel(src, path)
+		rel, err := filepath.Rel(canonicalSrc, path)
 		if err != nil {
 			return err
 		}
@@ -433,10 +442,21 @@ func copyLocalRepo(src string, dst string) error {
 			if err != nil {
 				return err
 			}
+			resolvedTarget, err := resolveSymlinkTarget(canonicalSrc, path, link)
+			if err != nil {
+				return err
+			}
+			if resolvedTarget == "" {
+				return nil
+			}
+			copiedLink, err := rewriteSymlinkTarget(canonicalSrc, dst, target, resolvedTarget)
+			if err != nil {
+				return err
+			}
 			if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
 				return err
 			}
-			return os.Symlink(link, target)
+			return os.Symlink(copiedLink, target)
 		}
 
 		info, err := d.Info()
@@ -449,6 +469,76 @@ func copyLocalRepo(src string, dst string) error {
 
 		return copyFile(path, target, info.Mode().Perm())
 	})
+}
+
+func resolveSymlinkTarget(srcRoot string, sourcePath string, link string) (string, error) {
+	var resolved string
+	if filepath.IsAbs(link) {
+		resolved = filepath.Clean(link)
+	} else {
+		resolved = filepath.Clean(filepath.Join(filepath.Dir(sourcePath), link))
+	}
+	canonicalResolved, err := canonicalizeExistingPath(resolved)
+	if err != nil {
+		return "", err
+	}
+	withinRoot, err := pathWithinRoot(srcRoot, canonicalResolved)
+	if err != nil {
+		return "", err
+	}
+	if !withinRoot {
+		return "", nil
+	}
+
+	return canonicalResolved, nil
+}
+
+func rewriteSymlinkTarget(srcRoot string, dstRoot string, dstPath string, resolvedSourceTarget string) (string, error) {
+	relToSourceRoot, err := filepath.Rel(srcRoot, resolvedSourceTarget)
+	if err != nil {
+		return "", fmt.Errorf("relativizing symlink target: %w", err)
+	}
+
+	dstTarget := filepath.Join(dstRoot, relToSourceRoot)
+	rewritten, err := filepath.Rel(filepath.Dir(dstPath), dstTarget)
+	if err != nil {
+		return "", fmt.Errorf("rewriting symlink target: %w", err)
+	}
+	return rewritten, nil
+}
+
+func pathWithinRoot(root string, candidate string) (bool, error) {
+	canonicalRoot, err := canonicalizeExistingPath(root)
+	if err != nil {
+		return false, err
+	}
+	canonicalCandidate, err := canonicalizeExistingPath(candidate)
+	if err != nil {
+		return false, err
+	}
+
+	rel, err := filepath.Rel(canonicalRoot, canonicalCandidate)
+	if err != nil {
+		return false, fmt.Errorf("checking path containment: %w", err)
+	}
+	if rel == ".." {
+		return false, nil
+	}
+	if strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return false, nil
+	}
+	return true, nil
+}
+
+func canonicalizeExistingPath(path string) (string, error) {
+	canonical, err := filepath.EvalSymlinks(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return filepath.Clean(path), nil
+		}
+		return "", fmt.Errorf("canonicalizing path %s: %w", path, err)
+	}
+	return canonical, nil
 }
 
 func copyFile(src string, dst string, mode fs.FileMode) error {
@@ -641,7 +731,11 @@ func sanitizeRepoName(name string) string {
 		}
 	}
 
-	return strings.Trim(b.String(), "-")
+	trimmed := strings.Trim(b.String(), "-")
+	if trimmed == "" {
+		return "repo"
+	}
+	return trimmed
 }
 
 func formatDuration(d time.Duration) string {

@@ -192,19 +192,19 @@ mcp_query() {
 echo "Measuring query latencies (symbol: $QUERY_SYMBOL) ..."
 
 GET_STRUCTURE_MS=$(time_cmd_quiet \
-  bash -c "printf '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{\"name\":\"get_file_structure\",\"arguments\":{\"file_path\":\"'"$SAMPLE_FILE"'\"}}}\\n' | $CODEINDEX serve")
+  mcp_query "get_file_structure" "{\"file_path\":\"$SAMPLE_FILE\"}")
 
 FIND_SYMBOL_MS=$(time_cmd_quiet \
-  bash -c "printf '{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",\"params\":{\"name\":\"find_symbol\",\"arguments\":{\"name\":\"'"$QUERY_SYMBOL"'\"}}}\\n' | $CODEINDEX serve")
+  mcp_query "find_symbol" "{\"name\":\"$QUERY_SYMBOL\"}")
 
 GET_REFS_MS=$(time_cmd_quiet \
-  bash -c "printf '{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"tools/call\",\"params\":{\"name\":\"get_references\",\"arguments\":{\"symbol\":\"'"$QUERY_SYMBOL"'\"}}}\\n' | $CODEINDEX serve")
+  mcp_query "get_references" "{\"symbol\":\"$QUERY_SYMBOL\"}")
 
 GET_CALLERS_MS=$(time_cmd_quiet \
-  bash -c "printf '{\"jsonrpc\":\"2.0\",\"id\":4,\"method\":\"tools/call\",\"params\":{\"name\":\"get_callers\",\"arguments\":{\"symbol\":\"'"$QUERY_SYMBOL"'\",\"depth\":3}}}\\n' | $CODEINDEX serve")
+  mcp_query "get_callers" "{\"symbol\":\"$QUERY_SYMBOL\",\"depth\":3}")
 
 GET_SUBGRAPH_MS=$(time_cmd_quiet \
-  bash -c "printf '{\"jsonrpc\":\"2.0\",\"id\":5,\"method\":\"tools/call\",\"params\":{\"name\":\"get_subgraph\",\"arguments\":{\"symbol\":\"'"$QUERY_SYMBOL"'\",\"depth\":2}}}\\n' | $CODEINDEX serve")
+  mcp_query "get_subgraph" "{\"symbol\":\"$QUERY_SYMBOL\",\"depth\":2}")
 
 # ── grep baseline ─────────────────────────────────────────────────────────────
 
