@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	benchmarkrun "github.com/01x/codeindex/internal/benchmark"
+	benchmarkrun "github.com/01x-in/codeindex/internal/benchmark"
 	"github.com/spf13/cobra"
 )
 

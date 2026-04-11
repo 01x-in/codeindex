@@ -5,7 +5,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/01x/codeindex/internal/graph"
+	"github.com/01x-in/codeindex/internal/graph"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

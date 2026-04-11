@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/01x/codeindex/internal/cli"
+	"github.com/01x-in/codeindex/internal/cli"
 )
 
 func TestVersionSet(t *testing.T) {

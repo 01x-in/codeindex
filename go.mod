@@ -1,4 +1,4 @@
-module github.com/01x/codeindex
+module github.com/01x-in/codeindex
 
 go 1.25.0
 

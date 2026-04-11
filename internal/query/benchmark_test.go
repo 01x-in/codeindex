@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/01x/codeindex/internal/graph"
-	"github.com/01x/codeindex/internal/hash"
-	"github.com/01x/codeindex/internal/query"
+	"github.com/01x-in/codeindex/internal/graph"
+	"github.com/01x-in/codeindex/internal/hash"
+	"github.com/01x-in/codeindex/internal/query"
 	"github.com/stretchr/testify/require"
 )
 

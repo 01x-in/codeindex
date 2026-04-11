@@ -2,7 +2,7 @@
 
 BINARY=codeindex
 VERSION?=dev
-LDFLAGS=-ldflags "-s -w -X github.com/01x/codeindex/internal/cli.Version=$(VERSION)"
+LDFLAGS=-ldflags "-s -w -X github.com/01x-in/codeindex/internal/cli.Version=$(VERSION)"
 
 build:
 	go build $(LDFLAGS) -o bin/$(BINARY) ./cmd/codeindex

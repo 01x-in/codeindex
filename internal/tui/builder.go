@@ -6,8 +6,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/01x/codeindex/internal/graph"
-	"github.com/01x/codeindex/internal/indexer"
+	"github.com/01x-in/codeindex/internal/graph"
+	"github.com/01x-in/codeindex/internal/indexer"
 )
 
 // SymbolTreeBuilder builds a tree rooted at a symbol from the graph store.

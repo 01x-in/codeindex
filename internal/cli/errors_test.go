@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/01x/codeindex/internal/cli"
-	"github.com/01x/codeindex/internal/indexer"
+	"github.com/01x-in/codeindex/internal/cli"
+	"github.com/01x-in/codeindex/internal/indexer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

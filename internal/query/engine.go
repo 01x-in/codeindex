@@ -1,8 +1,8 @@
 package query
 
 import (
-	"github.com/01x/codeindex/internal/graph"
-	"github.com/01x/codeindex/internal/indexer"
+	"github.com/01x-in/codeindex/internal/graph"
+	"github.com/01x-in/codeindex/internal/indexer"
 )
 
 // Engine provides high-level query operations over the knowledge graph.

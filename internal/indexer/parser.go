@@ -6,7 +6,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/01x/codeindex/internal/graph"
+	"github.com/01x-in/codeindex/internal/graph"
 )
 
 // ParseResult holds the parsed nodes and edges from ast-grep output.

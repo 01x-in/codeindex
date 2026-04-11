@@ -7,8 +7,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/01x/codeindex/internal/indexer"
-	"github.com/01x/codeindex/internal/query"
+	"github.com/01x-in/codeindex/internal/indexer"
+	"github.com/01x-in/codeindex/internal/query"
 )
 
 // Server is the MCP stdio JSON-RPC server.

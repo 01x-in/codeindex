@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/01x/codeindex/internal/config"
-	"github.com/01x/codeindex/internal/indexer"
+	"github.com/01x-in/codeindex/internal/config"
+	"github.com/01x-in/codeindex/internal/indexer"
 	"github.com/fsnotify/fsnotify"
 )
 

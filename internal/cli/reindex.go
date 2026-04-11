@@ -10,10 +10,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/01x/codeindex/internal/config"
-	"github.com/01x/codeindex/internal/graph"
-	"github.com/01x/codeindex/internal/indexer"
-	"github.com/01x/codeindex/internal/watcher"
+	"github.com/01x-in/codeindex/internal/config"
+	"github.com/01x-in/codeindex/internal/graph"
+	"github.com/01x-in/codeindex/internal/indexer"
+	"github.com/01x-in/codeindex/internal/watcher"
 	"github.com/spf13/cobra"
 )
 

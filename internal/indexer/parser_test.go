@@ -3,7 +3,7 @@ package indexer_test
 import (
 	"testing"
 
-	"github.com/01x/codeindex/internal/indexer"
+	"github.com/01x-in/codeindex/internal/indexer"
 	"github.com/stretchr/testify/assert"
 )
 

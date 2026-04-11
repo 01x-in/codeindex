@@ -13,10 +13,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/01x/codeindex/internal/config"
-	"github.com/01x/codeindex/internal/graph"
-	"github.com/01x/codeindex/internal/indexer"
-	"github.com/01x/codeindex/internal/query"
+	"github.com/01x-in/codeindex/internal/config"
+	"github.com/01x-in/codeindex/internal/graph"
+	"github.com/01x-in/codeindex/internal/indexer"
+	"github.com/01x-in/codeindex/internal/query"
 )
 
 // SourceKind identifies the benchmark source type.

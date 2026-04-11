@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/01x/codeindex/internal/config"
-	"github.com/01x/codeindex/internal/watcher"
+	"github.com/01x-in/codeindex/internal/config"
+	"github.com/01x-in/codeindex/internal/watcher"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

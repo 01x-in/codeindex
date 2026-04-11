@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/01x/codeindex/internal/graph"
-	"github.com/01x/codeindex/internal/hash"
+	"github.com/01x-in/codeindex/internal/graph"
+	"github.com/01x-in/codeindex/internal/hash"
 )
 
 // Indexer orchestrates ast-grep parsing and populates the graph store.

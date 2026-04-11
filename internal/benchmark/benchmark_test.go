@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/01x/codeindex/internal/testutil"
+	"github.com/01x-in/codeindex/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

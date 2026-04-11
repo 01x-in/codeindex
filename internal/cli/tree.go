@@ -5,9 +5,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/01x/codeindex/internal/config"
-	"github.com/01x/codeindex/internal/graph"
-	"github.com/01x/codeindex/internal/tui"
+	"github.com/01x-in/codeindex/internal/config"
+	"github.com/01x-in/codeindex/internal/graph"
+	"github.com/01x-in/codeindex/internal/tui"
 	"github.com/spf13/cobra"
 )
 
