@@ -8,16 +8,18 @@ Real-world performance of codeindex on large open-source repos — index build t
 # Prerequisites: ast-grep in PATH
 brew install ast-grep
 
-# By default the script builds and uses the current checkout
-./benchmarks/script.sh https://github.com/vercel/next.js createServer
-./benchmarks/script.sh https://github.com/kubernetes/kubernetes NewController
-./benchmarks/script.sh https://github.com/microsoft/vscode registerCommand
+# Preferred: use the built-in CLI command
+codeindex benchmark
+codeindex benchmark https://github.com/vercel/next.js createServer
+codeindex benchmark https://github.com/kubernetes/kubernetes NewController
+codeindex benchmark /path/to/local/repo handleRequest --out local-bench
 
-# Override the binary explicitly if needed
-CODEINDEX_BIN=./bin/codeindex ./benchmarks/script.sh https://github.com/vercel/next.js createServer
+# Legacy shell harness
+./benchmarks/script.sh https://github.com/microsoft/vscode registerCommand
 ```
 
-Results are written to `benchmarks/results/<repo-name>.md`.
+`codeindex benchmark` prints the result in the terminal and optionally exports markdown with `--out`.
+The legacy shell script writes to `benchmarks/results/<repo-name>.md`.
 
 ## What is measured
 
