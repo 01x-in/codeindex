@@ -13,27 +13,6 @@ A persistent structural knowledge graph for codebases. Parses symbols and relati
 - `codeindex serve` — MCP stdio server (JSON-RPC 2.0)
 - `codeindex benchmark` — benchmark against a repo URL or local path
 
-## Package layout
-
-```
-cmd/codeindex/          entry point
-internal/
-  cli/                  cobra commands (init, reindex, status, serve, query, tree, benchmark)
-  config/               .codeindex.yaml load + language auto-detection
-  indexer/              ast-grep subprocess runner + JSON output parser + per-language rules
-  graph/                SQLite store (modernc.org/sqlite) — nodes, edges, file_metadata tables
-  query/                query engine: file_structure, find_symbol, references, callers, subgraph
-  mcp/                  MCP stdio server, handlers, protocol types
-  tui/                  bubbletea app — tree view, preview pane, search, JSON output
-  watcher/              fsnotify-based file watcher
-  hash/                 SHA-256 content hashing for staleness
-  benchmark/            benchmark runner
-  testutil/             shared test helpers
-testdata/               fixture repos (ts-project, go-project, py-project, rust-project)
-skills/                 agent skill files (Claude Code, Cursor, Codex)
-npm/                    npx thin wrapper
-Formula/                Homebrew formula
-```
 
 ## Architecture decisions — do not override
 
