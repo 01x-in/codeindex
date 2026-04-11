@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>codeindex — Structural code intelligence for AI agents</title>
   <meta name="description"
-    content="A persistent knowledge graph for codebases. Query symbols, references, and call chains directly from your shell or via MCP — instead of reading raw files.">
+    content="A persistent knowledge graph for codebases. Query symbols, references, and call chains directly from your shell — instead of reading raw files.">
   <meta property="og:title" content="codeindex">
   <meta property="og:description"
     content="A persistent structural knowledge graph for codebases. Cut agent context usage 10-20x.">
@@ -1113,7 +1113,7 @@
 
     <p class="hero-desc">
       codeindex builds a persistent structural graph of your codebase —<br>
-      symbols, references, call chains — queryable via CLI or MCP.<br>
+      symbols, references, call chains — queryable via CLI.<br>
       No more reading entire files to find one function signature.
     </p>
 
@@ -1313,9 +1313,8 @@
           <div class="how-step">
             <div class="step-num">4</div>
             <div>
-              <div class="step-title">Query via CLI or MCP</div>
-              <div class="step-body">Call <span class="inline-code">codeindex query</span> directly from any shell — JSON to stdout, no server needed. Or run <span
-                  class="inline-code">codeindex serve</span> for MCP stdio. Explore interactively with <span
+              <div class="step-title">Query from any shell</div>
+              <div class="step-body">Call <span class="inline-code">codeindex query</span> directly — JSON to stdout, no server needed. Explore interactively with <span
                   class="inline-code">codeindex tree</span>.</div>
             </div>
           </div>
@@ -1396,8 +1395,8 @@
           <div class="demo-feat">
             <div class="demo-feat-icon">🔗</div>
             <div>
-              <div class="demo-feat-title">CLI or MCP — agent agnostic</div>
-              <div class="demo-feat-body">Call <span class="inline-code">codeindex query</span> directly via Bash, or connect via MCP stdio. Works with Claude Code, Cursor, Codex, Gemini, Copilot, Cline, and any custom agent.</div>
+              <div class="demo-feat-title">Agent agnostic</div>
+              <div class="demo-feat-body">Call <span class="inline-code">codeindex query</span> directly via Bash. Works with Claude Code, Cursor, Codex, Gemini, Copilot, Cline, and any agent with a shell tool.</div>
             </div>
           </div>
           <div class="demo-feat">
@@ -1484,10 +1483,7 @@
         <span class="qs-line"><span class="qs-comment"># 2. query directly (JSON output)</span></span>
         <span class="qs-line" style="color:var(--accent)">codeindex query find-symbol handleRequest</span>
         <span class="qs-line" style="color:var(--accent)">codeindex query references handleRequest</span>
-        <span class="qs-line"><span class="qs-comment"># 3. optional: MCP server for MCP-based agents</span></span>
-        <span class="qs-line" style="color:var(--text-dim)">codeindex serve</span>
-        <span class="qs-line"></span>
-        <span class="qs-line"><span class="qs-comment"># benchmark against any repo to see token reduction</span></span>
+        <span class="qs-line"><span class="qs-comment"># 3. benchmark against any repo to measure token reduction</span></span>
         <span class="qs-line" style="color:var(--accent)">codeindex benchmark https://github.com/vercel/next.js createServer</span>
       </div>
     </section>
