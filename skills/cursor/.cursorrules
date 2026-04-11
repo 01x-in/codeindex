@@ -1,51 +1,55 @@
 # Code Index — Structural Code Navigation for Cursor
 
-You have access to Code Index, a persistent structural knowledge graph of this codebase. It exposes MCP tools that let you query symbols, references, and call chains instead of reading raw files or running grep.
+You have access to Code Index, a persistent structural knowledge graph of this codebase. It lets you query symbols, references, and call chains instead of reading raw files or running grep. Call it directly via terminal — no MCP server required.
 
-## Available MCP Tools
+## Commands
 
-- `get_file_structure` — Returns the structural skeleton of a file (functions, classes, types, exports) without reading source code.
-- `find_symbol` — Locates where a function, type, variable, or class is defined across the codebase.
-- `get_references` — Finds every file and line that uses a given symbol, with relationship kind (calls, imports, references).
-- `get_callers` — Traces the call graph upstream from any function with configurable depth.
-- `get_subgraph` — Retrieves a bounded neighborhood of the knowledge graph around any symbol.
-- `reindex` — Triggers re-indexing of a specific file or the full repo.
+- `codeindex query file-structure <path>` — Returns the structural skeleton of a file (functions, classes, types, exports) without reading source code.
+- `codeindex query find-symbol <name> [--kind fn|class|type|interface|var]` — Locates where a function, type, variable, or class is defined across the codebase.
+- `codeindex query references <symbol>` — Finds every file and line that uses a given symbol, with relationship kind (calls, imports, references).
+- `codeindex query callers <symbol> [--depth N]` — Traces the call graph upstream from any function with configurable depth.
+- `codeindex query subgraph <symbol> [--depth N]` — Retrieves a bounded neighborhood of the knowledge graph around any symbol.
+- `codeindex reindex [<path>]` — Triggers re-indexing of a specific file or the full repo.
+
+All commands output JSON to stdout.
 
 ## Workflow Rules
 
 ### Before Reading a File
-1. Call `get_file_structure` with the file path before reading the raw file.
-2. Check the `stale` flag in the response:
-   - `stale: false` means the data is fresh and trustworthy.
-   - `stale: true` means the file changed since last index. Call `reindex` on that file first, then re-query.
+1. Run `codeindex query file-structure <path>` before reading the raw file.
+2. Check the `stale` field in the JSON response:
+   - `"stale": false` means the data is fresh and trustworthy.
+   - `"stale": true` means the file changed since last index. Run `codeindex reindex <path>` first, then re-query.
 3. Only read the raw file if you need implementation details beyond the structural skeleton.
 
 ### After Every File Edit
-1. Call `reindex` with the edited file path immediately after making changes.
+1. Run `codeindex reindex <path>` with the edited file path immediately after making changes.
 2. This keeps the knowledge graph current for subsequent queries.
 3. Single-file reindex completes in under 100ms — never skip this step.
 
 ### Symbol Navigation
-- Use `find_symbol` instead of grep when asked "where is X defined?"
-- Use `get_references` instead of grep when asked "who uses X?" or "what calls X?"
-- Use `get_callers` to trace upstream call chains for blast radius analysis before refactoring.
-- Use `get_subgraph` to get compact structural context around a symbol (replaces reading 5-10 files).
+- Use `codeindex query find-symbol X` instead of grep when asked "where is X defined?"
+- Use `codeindex query references X` instead of grep when asked "who uses X?" or "what calls X?"
+- Use `codeindex query callers X` to trace upstream call chains for blast radius analysis before refactoring.
+- Use `codeindex query subgraph X` to get compact structural context around a symbol (replaces reading 5-10 files).
 
 ### Interpreting Staleness
-- Every tool response includes `stale: true` or `stale: false` per file.
+- Every command's JSON output includes `"stale": true` or `"stale": false` per file.
 - The `metadata.stale_files` array lists all stale files in the response.
-- When `stale: true`, call `reindex` on the stale file before trusting the structural data.
+- When stale, run `codeindex reindex <path>` on the stale file before trusting the structural data.
 
 ## CLI Commands
 
 ```
-codeindex init              # Auto-detect languages, create .codeindex.yaml
-codeindex reindex           # Re-index all stale files (incremental)
-codeindex reindex <path>    # Re-index a single file
-codeindex status            # Show index health summary
-codeindex serve             # Start MCP stdio server
-codeindex tree <symbol>     # Interactive tree explorer
-codeindex tree --file <path> # File structure tree
+codeindex init                    # Auto-detect languages, create .codeindex.yaml
+codeindex reindex                 # Re-index all stale files (incremental)
+codeindex reindex <path>          # Re-index a single file
+codeindex status                  # Show index health summary
+codeindex query file-structure <path>
+codeindex query find-symbol <name> [--kind fn|class|type|interface|var]
+codeindex query references <symbol>
+codeindex query callers <symbol> [--depth N]
+codeindex query subgraph <symbol> [--depth N] [--edge-kinds calls,imports,...]
 ```
 
 ## When NOT to Use Code Index
@@ -59,6 +63,5 @@ codeindex tree --file <path> # File structure tree
 - Run `codeindex init` once per repo to create config and initial index.
 
 ## Error Handling
-- Tool errors include RFC 7807 `detail` messages with actionable instructions.
-- "file-not-indexed" errors: run `codeindex reindex <path>` first.
-- "symbol-not-found" errors: check spelling; the error may suggest alternatives.
+- Exit code 1 with an error on stderr means the query failed — verify `codeindex init` has been run.
+- If queries return no results unexpectedly, run `codeindex status` to check for stale files, then `codeindex reindex`.

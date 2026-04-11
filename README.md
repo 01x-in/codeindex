@@ -1,6 +1,6 @@
 # codeindex
 
-A persistent structural knowledge graph for codebases. Lets AI coding agents and developers query symbols, references, and call chains via MCP tools and a CLI tree explorer — instead of reading raw files.
+A persistent structural knowledge graph for codebases. Lets AI coding agents and developers query symbols, references, and call chains — instead of reading raw files.
 
 Built on [ast-grep](https://ast-grep.github.io) for tree-sitter parsing, [SQLite](https://sqlite.org) for the graph store.
 
@@ -48,12 +48,12 @@ codeindex init        # auto-detect languages, write .codeindex.yaml, run initia
 codeindex status      # check index health
 codeindex reindex     # re-index stale files
 
-# Query
-codeindex tree handleRequest              # interactive tree explorer
-codeindex tree --file src/api/handler.ts  # file structure outline
-
-# MCP server (for AI agents)
-codeindex serve
+# Query the index (JSON output — use directly from agents or scripts)
+codeindex query file-structure src/api/handler.ts
+codeindex query find-symbol handleRequest --kind fn
+codeindex query references handleRequest
+codeindex query callers handleRequest --depth 5
+codeindex query subgraph handleRequest --depth 2
 ```
 
 ---
@@ -69,9 +69,26 @@ codeindex serve
 
 ---
 
-## MCP agent integration
+## Agent integration
 
-Add to your agent's MCP config:
+### Direct CLI (recommended)
+
+The `codeindex query` subcommands output JSON to stdout — coding agents can call them directly via Bash with no server setup.
+
+| Command | Description |
+|---------|-------------|
+| `codeindex query file-structure <path>` | Structural skeleton of a file (exports, functions, classes, types) |
+| `codeindex query find-symbol <name> [--kind fn\|class\|type\|interface\|var]` | Locate where any symbol is defined across the codebase |
+| `codeindex query references <symbol>` | Every file and line that uses a given symbol |
+| `codeindex query callers <symbol> [--depth N]` | Trace the call graph upstream from a function |
+| `codeindex query subgraph <symbol> [--depth N] [--edge-kinds ...]` | Bounded neighborhood around a symbol — up to N hops |
+| `codeindex reindex [<path>]` | Trigger re-indexing of a file or the full repo |
+
+All responses include a `stale` flag and `metadata.stale_files` so the agent knows when to reindex.
+
+### MCP server (optional)
+
+For environments that prefer MCP tool calls, run `codeindex serve` and add to your agent's MCP config:
 
 ```json
 {
@@ -84,31 +101,24 @@ Add to your agent's MCP config:
 }
 ```
 
-### Available MCP tools
-
-| Tool | Description |
-|------|-------------|
-| `get_file_structure` | Structural skeleton of a file (exports, functions, classes, types) |
-| `find_symbol` | Locate where any symbol is defined across the codebase |
-| `get_references` | Every file and line that uses a given symbol |
-| `get_callers` | Trace the call graph upstream from a function (configurable depth) |
-| `get_subgraph` | Bounded neighborhood around a symbol — up to N hops |
-| `reindex` | Trigger re-indexing of a file or the full repo |
-
-All responses include a `stale` flag so the agent knows when to reindex.
+The MCP server exposes the same six operations as the `query` subcommands.
 
 ---
 
 ## CLI reference
 
 ```
-codeindex init [--yes]                    Auto-detect languages, create config
-codeindex reindex [<file>] [--watch]      Re-index stale files or watch for changes
-codeindex status [--json]                 Index health summary
-codeindex serve                           Start MCP stdio server
-codeindex tree <symbol> [--json]          Interactive TUI tree explorer
-codeindex tree --file <path>              File structure tree
-codeindex version                         Print version
+codeindex init [--yes]                           Auto-detect languages, create config
+codeindex reindex [<file>] [--watch]             Re-index stale files or watch for changes
+codeindex status [--json]                        Index health summary
+codeindex query file-structure <path>            Structural skeleton of a file (JSON)
+codeindex query find-symbol <name> [--kind]      Find symbol definitions (JSON)
+codeindex query references <symbol>              Find all usages of a symbol (JSON)
+codeindex query callers <symbol> [--depth N]     Upstream call graph (JSON)
+codeindex query subgraph <symbol> [--depth N]    Graph neighborhood (JSON)
+codeindex serve                                  Start MCP stdio server
+codeindex tree <symbol>                          Interactive TUI tree explorer
+codeindex version                                Print version
 ```
 
 ### Watch mode
@@ -131,13 +141,6 @@ ignore:
   - vendor
   - .git
   - dist
-query_primitives:
-  - get_file_structure
-  - find_symbol
-  - get_references
-  - get_callers
-  - get_subgraph
-  - reindex
 index_path: .codeindex
 ```
 
@@ -145,7 +148,7 @@ index_path: .codeindex
 
 ## Agent skills
 
-Install the codeindex skill for your AI agent (instructs it when to call `get_file_structure`, when to `reindex`, how to read the `stale` flag):
+Install the codeindex skill for your AI agent (instructs it when to call `file-structure`, when to `reindex`, how to read the `stale` flag):
 
 ```sh
 npx skills add 01x-in/codeindex-skills
