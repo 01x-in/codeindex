@@ -388,3 +388,12 @@ func TestBuildRepoTreeFiltersPackageFiles(t *testing.T) {
 	require.Len(t, root.Children, 1)
 	assert.Equal(t, "cmd/codeindex/main.go", root.Children[0].Name)
 }
+
+func TestPreferredRootNodeEmptyInput(t *testing.T) {
+	store, tmpDir := setupTestStore(t)
+	defer store.Close()
+
+	builder := NewSymbolTreeBuilder(store, tmpDir)
+	root := builder.preferredRootNode(nil)
+	assert.Equal(t, graph.Node{}, root)
+}

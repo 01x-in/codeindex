@@ -374,6 +374,9 @@ func (b *SymbolTreeBuilder) preferredRootNode(nodes []graph.Node) graph.Node {
 	if len(preferred) == 0 {
 		preferred = append(preferred, nodes...)
 	}
+	if len(preferred) == 0 {
+		return graph.Node{}
+	}
 
 	sort.SliceStable(preferred, func(i, j int) bool {
 		leftPriority := b.filePriority(preferred[i].FilePath)
