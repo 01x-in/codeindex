@@ -13,6 +13,52 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// queryResponse is implemented by all query result types.
+// It exists so writeQueryJSON has an explicit type signature instead of any.
+type queryResponse interface {
+	isQueryResponse()
+}
+
+// --- response types ---
+
+type fileStructureResponse struct {
+	query.FileStructure
+	Metadata query.QueryMetadata `json:"metadata"`
+}
+
+func (fileStructureResponse) isQueryResponse() {}
+
+type findSymbolResponse struct {
+	Results  []query.SymbolResult `json:"results"`
+	Metadata query.QueryMetadata  `json:"metadata"`
+}
+
+func (findSymbolResponse) isQueryResponse() {}
+
+type referencesResponse struct {
+	Results  []query.ReferenceResult `json:"results"`
+	Metadata query.QueryMetadata     `json:"metadata"`
+}
+
+func (referencesResponse) isQueryResponse() {}
+
+type callersResponse struct {
+	Results  []query.CallerResult `json:"results"`
+	Metadata query.QueryMetadata  `json:"metadata"`
+}
+
+func (callersResponse) isQueryResponse() {}
+
+type subgraphResponse struct {
+	Nodes    []query.SubgraphNode `json:"nodes"`
+	Edges    []query.SubgraphEdge `json:"edges"`
+	Metadata query.QueryMetadata  `json:"metadata"`
+}
+
+func (subgraphResponse) isQueryResponse() {}
+
+// --- commands ---
+
 var queryCmd = &cobra.Command{
 	Use:   "query",
 	Short: "Query the code index",
@@ -72,10 +118,7 @@ func runQueryFileStructure(cmd *cobra.Command, args []string) error {
 	}
 	meta.QueryDurationMs = time.Since(start).Milliseconds()
 
-	return writeQueryJSON(cmd, struct {
-		query.FileStructure
-		Metadata query.QueryMetadata `json:"metadata"`
-	}{result, meta})
+	return writeQueryJSON(cmd, fileStructureResponse{result, meta})
 }
 
 // --- find-symbol ---
@@ -108,10 +151,7 @@ func runQueryFindSymbol(cmd *cobra.Command, args []string) error {
 	}
 	meta.QueryDurationMs = time.Since(start).Milliseconds()
 
-	return writeQueryJSON(cmd, struct {
-		Results  []query.SymbolResult `json:"results"`
-		Metadata query.QueryMetadata  `json:"metadata"`
-	}{results, meta})
+	return writeQueryJSON(cmd, findSymbolResponse{results, meta})
 }
 
 // --- references ---
@@ -141,10 +181,7 @@ func runQueryReferences(cmd *cobra.Command, args []string) error {
 	}
 	meta.QueryDurationMs = time.Since(start).Milliseconds()
 
-	return writeQueryJSON(cmd, struct {
-		Results  []query.ReferenceResult `json:"results"`
-		Metadata query.QueryMetadata     `json:"metadata"`
-	}{results, meta})
+	return writeQueryJSON(cmd, referencesResponse{results, meta})
 }
 
 // --- callers ---
@@ -177,10 +214,7 @@ func runQueryCallers(cmd *cobra.Command, args []string) error {
 	}
 	meta.QueryDurationMs = time.Since(start).Milliseconds()
 
-	return writeQueryJSON(cmd, struct {
-		Results  []query.CallerResult `json:"results"`
-		Metadata query.QueryMetadata  `json:"metadata"`
-	}{results, meta})
+	return writeQueryJSON(cmd, callersResponse{results, meta})
 }
 
 // --- subgraph ---
@@ -214,11 +248,7 @@ func runQuerySubgraph(cmd *cobra.Command, args []string) error {
 	}
 	meta.QueryDurationMs = time.Since(start).Milliseconds()
 
-	return writeQueryJSON(cmd, struct {
-		Nodes    []query.SubgraphNode `json:"nodes"`
-		Edges    []query.SubgraphEdge `json:"edges"`
-		Metadata query.QueryMetadata  `json:"metadata"`
-	}{result.Nodes, result.Edges, meta})
+	return writeQueryJSON(cmd, subgraphResponse{result.Nodes, result.Edges, meta})
 }
 
 // --- shared helpers ---
@@ -237,6 +267,10 @@ func openQueryEngine() (*graph.SQLiteStore, *query.Engine, error) {
 	}
 
 	dbPath := filepath.Join(dir, cfg.IndexPath, "graph.db")
+	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
+		return nil, nil, fmt.Errorf("no index found — run 'codeindex init' to get started")
+	}
+
 	store, err := graph.NewSQLiteStore(dbPath)
 	if err != nil {
 		return nil, nil, fmt.Errorf("opening graph store: %w", err)
@@ -250,9 +284,9 @@ func openQueryEngine() (*graph.SQLiteStore, *query.Engine, error) {
 	return store, query.NewEngine(store, dir), nil
 }
 
-// writeQueryJSON serializes v as indented JSON and writes it to cmd's stdout.
-func writeQueryJSON(cmd *cobra.Command, v any) error {
-	data, err := json.MarshalIndent(v, "", "  ")
+// writeQueryJSON serializes resp as indented JSON and writes it to cmd's stdout.
+func writeQueryJSON(cmd *cobra.Command, resp queryResponse) error {
+	data, err := json.MarshalIndent(resp, "", "  ")
 	if err != nil {
 		return fmt.Errorf("marshaling response: %w", err)
 	}
