@@ -68,7 +68,8 @@ func TestCopyLocalRepoSkipsEscapingSymlinks(t *testing.T) {
 	safeLinkPath := filepath.Join(dstRoot, "safe-link.txt")
 	target, err := os.Readlink(safeLinkPath)
 	require.NoError(t, err)
-	assert.Equal(t, "safe.txt", target)
+	resolved := filepath.Clean(filepath.Join(filepath.Dir(safeLinkPath), target))
+	assert.Equal(t, filepath.Join(dstRoot, "safe.txt"), resolved)
 
 	_, err = os.Lstat(filepath.Join(dstRoot, "escape-link.txt"))
 	assert.ErrorIs(t, err, os.ErrNotExist)
@@ -135,9 +136,12 @@ func TestResolveSymlinkTargetRejectsEscapes(t *testing.T) {
 	assert.Equal(t, "", resolved)
 
 	insideTarget := filepath.Join(srcRoot, "nested", "real.txt")
+	require.NoError(t, os.WriteFile(insideTarget, []byte("safe"), 0644))
 	resolved, err = resolveSymlinkTarget(srcRoot, symlinkPath, insideTarget)
 	require.NoError(t, err)
-	assert.Equal(t, insideTarget, resolved)
+	canonicalTarget, err := filepath.EvalSymlinks(insideTarget)
+	require.NoError(t, err)
+	assert.Equal(t, canonicalTarget, resolved)
 }
 
 func TestRewriteSymlinkTargetProducesRelativePath(t *testing.T) {
@@ -150,4 +154,46 @@ func TestRewriteSymlinkTargetProducesRelativePath(t *testing.T) {
 	require.NoError(t, err)
 	assert.False(t, filepath.IsAbs(rewritten))
 	assert.True(t, strings.HasSuffix(rewritten, filepath.Join("..", "nested", "real.txt")))
+}
+
+func TestResolveSourceCanonicalizesSymlinkedLocalRepo(t *testing.T) {
+	realRoot := t.TempDir()
+	linkParent := t.TempDir()
+	linkRoot := filepath.Join(linkParent, "repo-link")
+
+	require.NoError(t, os.Symlink(realRoot, linkRoot))
+
+	source, err := resolveSource(linkRoot)
+	require.NoError(t, err)
+
+	canonicalPath, err := filepath.EvalSymlinks(realRoot)
+	require.NoError(t, err)
+
+	assert.Equal(t, filepath.Clean(linkRoot), source.original)
+	assert.Equal(t, canonicalPath, source.local)
+	assert.Equal(t, "repo-link", source.repoName)
+}
+
+func TestCopyLocalRepoKeepsAbsoluteLinksInsideCanonicalizedRoot(t *testing.T) {
+	realRoot := t.TempDir()
+	linkParent := t.TempDir()
+	linkRoot := filepath.Join(linkParent, "repo-link")
+	dstRoot := t.TempDir()
+
+	realFile := filepath.Join(realRoot, "nested", "real.txt")
+	require.NoError(t, os.MkdirAll(filepath.Dir(realFile), 0755))
+	require.NoError(t, os.WriteFile(realFile, []byte("safe"), 0644))
+	require.NoError(t, os.Symlink(realFile, filepath.Join(realRoot, "absolute-link.txt")))
+	require.NoError(t, os.Symlink(realRoot, linkRoot))
+
+	source, err := resolveSource(linkRoot)
+	require.NoError(t, err)
+	require.NoError(t, copyLocalRepo(source.local, dstRoot))
+
+	linkPath := filepath.Join(dstRoot, "absolute-link.txt")
+	linkTarget, err := os.Readlink(linkPath)
+	require.NoError(t, err)
+
+	resolved := filepath.Clean(filepath.Join(filepath.Dir(linkPath), linkTarget))
+	assert.Equal(t, filepath.Join(dstRoot, "nested", "real.txt"), resolved)
 }

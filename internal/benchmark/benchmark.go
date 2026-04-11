@@ -367,11 +367,15 @@ func resolveSource(input string) (resolvedSource, error) {
 	if !info.IsDir() {
 		return resolvedSource{}, fmt.Errorf("local path must be a directory: %s", absPath)
 	}
+	canonicalPath, err := filepath.EvalSymlinks(absPath)
+	if err != nil {
+		return resolvedSource{}, fmt.Errorf("canonicalizing local path %s: %w", absPath, err)
+	}
 
 	return resolvedSource{
 		kind:     SourceKindLocal,
 		original: filepath.Clean(absPath),
-		local:    absPath,
+		local:    canonicalPath,
 		repoName: sanitizeRepoName(filepath.Base(absPath)),
 	}, nil
 }
@@ -386,6 +390,11 @@ func cloneRepo(remote string, dst string) error {
 }
 
 func copyLocalRepo(src string, dst string) error {
+	canonicalSrc, err := canonicalizeExistingPath(src)
+	if err != nil {
+		return err
+	}
+
 	ignoreDirs := map[string]bool{
 		".codeindex": true,
 	}
@@ -397,12 +406,12 @@ func copyLocalRepo(src string, dst string) error {
 		return fmt.Errorf("creating workspace: %w", err)
 	}
 
-	return filepath.WalkDir(src, func(path string, d fs.DirEntry, walkErr error) error {
+	return filepath.WalkDir(canonicalSrc, func(path string, d fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
 		}
 
-		rel, err := filepath.Rel(src, path)
+		rel, err := filepath.Rel(canonicalSrc, path)
 		if err != nil {
 			return err
 		}
@@ -433,14 +442,14 @@ func copyLocalRepo(src string, dst string) error {
 			if err != nil {
 				return err
 			}
-			resolvedTarget, err := resolveSymlinkTarget(src, path, link)
+			resolvedTarget, err := resolveSymlinkTarget(canonicalSrc, path, link)
 			if err != nil {
 				return err
 			}
 			if resolvedTarget == "" {
 				return nil
 			}
-			copiedLink, err := rewriteSymlinkTarget(src, dst, target, resolvedTarget)
+			copiedLink, err := rewriteSymlinkTarget(canonicalSrc, dst, target, resolvedTarget)
 			if err != nil {
 				return err
 			}
@@ -469,8 +478,11 @@ func resolveSymlinkTarget(srcRoot string, sourcePath string, link string) (strin
 	} else {
 		resolved = filepath.Clean(filepath.Join(filepath.Dir(sourcePath), link))
 	}
-
-	withinRoot, err := pathWithinRoot(srcRoot, resolved)
+	canonicalResolved, err := canonicalizeExistingPath(resolved)
+	if err != nil {
+		return "", err
+	}
+	withinRoot, err := pathWithinRoot(srcRoot, canonicalResolved)
 	if err != nil {
 		return "", err
 	}
@@ -478,7 +490,7 @@ func resolveSymlinkTarget(srcRoot string, sourcePath string, link string) (strin
 		return "", nil
 	}
 
-	return resolved, nil
+	return canonicalResolved, nil
 }
 
 func rewriteSymlinkTarget(srcRoot string, dstRoot string, dstPath string, resolvedSourceTarget string) (string, error) {
@@ -496,7 +508,16 @@ func rewriteSymlinkTarget(srcRoot string, dstRoot string, dstPath string, resolv
 }
 
 func pathWithinRoot(root string, candidate string) (bool, error) {
-	rel, err := filepath.Rel(root, candidate)
+	canonicalRoot, err := canonicalizeExistingPath(root)
+	if err != nil {
+		return false, err
+	}
+	canonicalCandidate, err := canonicalizeExistingPath(candidate)
+	if err != nil {
+		return false, err
+	}
+
+	rel, err := filepath.Rel(canonicalRoot, canonicalCandidate)
 	if err != nil {
 		return false, fmt.Errorf("checking path containment: %w", err)
 	}
@@ -507,6 +528,17 @@ func pathWithinRoot(root string, candidate string) (bool, error) {
 		return false, nil
 	}
 	return true, nil
+}
+
+func canonicalizeExistingPath(path string) (string, error) {
+	canonical, err := filepath.EvalSymlinks(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return filepath.Clean(path), nil
+		}
+		return "", fmt.Errorf("canonicalizing path %s: %w", path, err)
+	}
+	return canonical, nil
 }
 
 func copyFile(src string, dst string, mode fs.FileMode) error {
