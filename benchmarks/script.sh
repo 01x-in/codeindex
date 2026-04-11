@@ -82,16 +82,41 @@ time_cmd_logged() {
   echo $(( (t1 - t0) / 1000000 ))
 }
 
-json_number() {
-  # json_number <json> <key>
-  local json="$1"
-  local key="$2"
+sum_matches() {
+  # sum_matches <pattern> <file>
+  local pattern="$1"
+  local file="$2"
+  local matches
 
-  printf '%s' "$json" \
-    | tr -d '[:space:]' \
-    | grep -o "\"$key\":[0-9]*" \
-    | head -1 \
-    | grep -o '[0-9]*' || echo "?"
+  matches=$(grep -Eo "$pattern" "$file" || true)
+  if [ -z "$matches" ]; then
+    echo "?"
+    return
+  fi
+
+  printf '%s\n' "$matches" \
+    | grep -Eo '[0-9]+' \
+    | awk '{ sum += $1 } END { print sum + 0 }'
+}
+
+extract_files_indexed() {
+  # extract_files_indexed <init-log>
+  local file="$1"
+  local count
+
+  count=$(awk '
+    match($0, /^Reindexed [0-9]+ files/) {
+      match($0, /[0-9]+/)
+      print substr($0, RSTART, RLENGTH)
+      exit
+    }
+  ' "$file")
+
+  if [ -n "$count" ]; then
+    echo "$count"
+  else
+    echo "?"
+  fi
 }
 
 # ── preflight ────────────────────────────────────────────────────────────────
@@ -125,22 +150,27 @@ rm -rf .codeindex .codeindex.yaml
 
 # ── measure: init (config + full index) ──────────────────────────────────────
 
+INIT_LOG=$(mktemp)
+trap 'rm -f "$INIT_LOG"' EXIT
+
 echo "Running codeindex init --yes ..."
-INIT_MS=$(time_cmd_logged "$CODEINDEX" init --yes)
+INIT_T0=$(now_ns)
+"$CODEINDEX" init --yes 2>&1 | tee "$INIT_LOG" >&2
+INIT_T1=$(now_ns)
+INIT_MS=$(( (INIT_T1 - INIT_T0) / 1000000 ))
 
-# ── collect status ───────────────────────────────────────────────────────────
-
-STATUS_JSON=$("$CODEINDEX" status --json 2>/dev/null)
-FILES_INDEXED=$(json_number "$STATUS_JSON" "files_indexed")
-FILES_FRESH=$(json_number "$STATUS_JSON" "files_fresh")
-NODES=$(json_number "$STATUS_JSON" "nodes")
-EDGES=$(json_number "$STATUS_JSON" "edges")
+# Fresh cold init means the newly indexed files are also fresh.
+FILES_INDEXED=$(extract_files_indexed "$INIT_LOG")
+FILES_FRESH="$FILES_INDEXED"
+NODES=$(sum_matches '\+[0-9]+ nodes' "$INIT_LOG")
+EDGES=$(sum_matches '\+[0-9]+ edges' "$INIT_LOG")
 
 # ── pick a real file to reindex ───────────────────────────────────────────────
 
-SAMPLE_FILE=$(find . -name "*.ts" -o -name "*.go" 2>/dev/null \
-  | grep -v node_modules | grep -v vendor | grep -v ".codeindex" \
-  | head -1 | sed 's|^\./||')
+SAMPLE_FILE=$(find . \
+  \( -path './node_modules' -o -path './vendor' -o -path './.codeindex' \) -prune -o \
+  \( -name '*.ts' -o -name '*.tsx' -o -name '*.go' -o -name '*.py' -o -name '*.rs' \) \
+  -print -quit 2>/dev/null | sed 's|^\./||')
 
 # ── measure: single file reindex ─────────────────────────────────────────────
 
