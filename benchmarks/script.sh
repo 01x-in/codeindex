@@ -9,8 +9,12 @@ set -euo pipefail
 
 REPO_URL="${1:-https://github.com/vercel/next.js}"
 QUERY_SYMBOL="${2:-createServer}"
-CODEINDEX="${CODEINDEX_BIN:-codeindex}"
-RESULTS_DIR="$(cd "$(dirname "$0")" && pwd)/results"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+DEFAULT_CODEINDEX_BIN="$REPO_ROOT/bin/codeindex-benchmark"
+BUILD_GOCACHE="${GOCACHE:-/tmp/codeindex-go-build}"
+CODEINDEX="${CODEINDEX_BIN:-$DEFAULT_CODEINDEX_BIN}"
+RESULTS_DIR="$SCRIPT_DIR/results"
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -18,6 +22,34 @@ die() { echo "error: $*" >&2; exit 1; }
 
 require() {
   command -v "$1" &>/dev/null || die "$1 not found in PATH"
+}
+
+resolve_executable() {
+  local cmd="$1"
+
+  if [[ "$cmd" == */* ]]; then
+    local dir
+    dir=$(cd "$(dirname "$cmd")" && pwd -P)
+    local abs="$dir/$(basename "$cmd")"
+    [ -x "$abs" ] || die "$cmd not found"
+    printf '%s\n' "$abs"
+    return
+  fi
+
+  command -v "$cmd" 2>/dev/null || die "$cmd not found in PATH"
+}
+
+build_local_codeindex() {
+  local output="$1"
+
+  [ -f "$REPO_ROOT/cmd/codeindex/main.go" ] || die "local codeindex source not found at $REPO_ROOT"
+
+  mkdir -p "$(dirname "$output")" "$BUILD_GOCACHE"
+  echo "Building local codeindex from $REPO_ROOT ..."
+  (
+    cd "$REPO_ROOT"
+    GOCACHE="$BUILD_GOCACHE" go build -o "$output" ./cmd/codeindex
+  ) >/dev/null
 }
 
 ms() {
@@ -34,20 +66,70 @@ now_ns() {
   fi
 }
 
-time_cmd() {
-  # time_cmd <label> <command...>
-  local label="$1"; shift
+time_cmd_quiet() {
+  # time_cmd_quiet <command...>
   local t0; t0=$(now_ns)
-  "$@" 2>/dev/null
+  "$@" >/dev/null 2>&1
   local t1; t1=$(now_ns)
   echo $(( (t1 - t0) / 1000000 ))
+}
+
+time_cmd_logged() {
+  # time_cmd_logged <command...>
+  local t0; t0=$(now_ns)
+  "$@" >&2
+  local t1; t1=$(now_ns)
+  echo $(( (t1 - t0) / 1000000 ))
+}
+
+sum_matches() {
+  # sum_matches <pattern> <file>
+  local pattern="$1"
+  local file="$2"
+  local matches
+
+  matches=$(grep -Eo "$pattern" "$file" || true)
+  if [ -z "$matches" ]; then
+    echo "?"
+    return
+  fi
+
+  printf '%s\n' "$matches" \
+    | grep -Eo '[0-9]+' \
+    | awk '{ sum += $1 } END { print sum + 0 }'
+}
+
+extract_files_indexed() {
+  # extract_files_indexed <init-log>
+  local file="$1"
+  local count
+
+  count=$(awk '
+    match($0, /^Reindexed [0-9]+ files/) {
+      match($0, /[0-9]+/)
+      print substr($0, RSTART, RLENGTH)
+      exit
+    }
+  ' "$file")
+
+  if [ -n "$count" ]; then
+    echo "$count"
+  else
+    echo "?"
+  fi
 }
 
 # ── preflight ────────────────────────────────────────────────────────────────
 
 require git
-require "$CODEINDEX"
 require ast-grep
+if [ -n "${CODEINDEX_BIN:-}" ]; then
+  CODEINDEX=$(resolve_executable "$CODEINDEX_BIN")
+else
+  require go
+  build_local_codeindex "$DEFAULT_CODEINDEX_BIN"
+  CODEINDEX=$(resolve_executable "$DEFAULT_CODEINDEX_BIN")
+fi
 
 # ── clone ────────────────────────────────────────────────────────────────────
 
@@ -68,29 +150,34 @@ rm -rf .codeindex .codeindex.yaml
 
 # ── measure: init (config + full index) ──────────────────────────────────────
 
+INIT_LOG=$(mktemp)
+trap 'rm -f "$INIT_LOG"' EXIT
+
 echo "Running codeindex init --yes ..."
-INIT_MS=$(time_cmd "init" "$CODEINDEX" init --yes)
+INIT_T0=$(now_ns)
+"$CODEINDEX" init --yes 2>&1 | tee "$INIT_LOG" >&2
+INIT_T1=$(now_ns)
+INIT_MS=$(( (INIT_T1 - INIT_T0) / 1000000 ))
 
-# ── collect status ───────────────────────────────────────────────────────────
-
-STATUS_JSON=$("$CODEINDEX" status --json 2>/dev/null)
-FILES_INDEXED=$(echo "$STATUS_JSON" | grep -o '"files_indexed":[0-9]*' | grep -o '[0-9]*' || echo "?")
-FILES_FRESH=$(echo "$STATUS_JSON"   | grep -o '"files_fresh":[0-9]*'   | grep -o '[0-9]*' || echo "?")
-NODES=$(echo "$STATUS_JSON"         | grep -o '"nodes":[0-9]*'         | grep -o '[0-9]*' || echo "?")
-EDGES=$(echo "$STATUS_JSON"         | grep -o '"edges":[0-9]*'         | grep -o '[0-9]*' || echo "?")
+# Fresh cold init means the newly indexed files are also fresh.
+FILES_INDEXED=$(extract_files_indexed "$INIT_LOG")
+FILES_FRESH="$FILES_INDEXED"
+NODES=$(sum_matches '\+[0-9]+ nodes' "$INIT_LOG")
+EDGES=$(sum_matches '\+[0-9]+ edges' "$INIT_LOG")
 
 # ── pick a real file to reindex ───────────────────────────────────────────────
 
-SAMPLE_FILE=$(find . -name "*.ts" -o -name "*.go" 2>/dev/null \
-  | grep -v node_modules | grep -v vendor | grep -v ".codeindex" \
-  | head -1 | sed 's|^\./||')
+SAMPLE_FILE=$(find . \
+  \( -path './node_modules' -o -path './vendor' -o -path './.codeindex' \) -prune -o \
+  \( -name '*.ts' -o -name '*.tsx' -o -name '*.go' -o -name '*.py' -o -name '*.rs' \) \
+  -print -quit 2>/dev/null | sed 's|^\./||')
 
 # ── measure: single file reindex ─────────────────────────────────────────────
 
 REINDEX_MS="?"
 if [ -n "$SAMPLE_FILE" ]; then
   echo "Single-file reindex: $SAMPLE_FILE"
-  REINDEX_MS=$(time_cmd "reindex" "$CODEINDEX" reindex "$SAMPLE_FILE")
+  REINDEX_MS=$(time_cmd_quiet "$CODEINDEX" reindex "$SAMPLE_FILE")
 fi
 
 # ── measure: MCP queries ──────────────────────────────────────────────────────
@@ -104,19 +191,19 @@ mcp_query() {
 
 echo "Measuring query latencies (symbol: $QUERY_SYMBOL) ..."
 
-GET_STRUCTURE_MS=$(time_cmd "get_file_structure" \
+GET_STRUCTURE_MS=$(time_cmd_quiet \
   bash -c "printf '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{\"name\":\"get_file_structure\",\"arguments\":{\"file_path\":\"'"$SAMPLE_FILE"'\"}}}\\n' | $CODEINDEX serve")
 
-FIND_SYMBOL_MS=$(time_cmd "find_symbol" \
+FIND_SYMBOL_MS=$(time_cmd_quiet \
   bash -c "printf '{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",\"params\":{\"name\":\"find_symbol\",\"arguments\":{\"name\":\"'"$QUERY_SYMBOL"'\"}}}\\n' | $CODEINDEX serve")
 
-GET_REFS_MS=$(time_cmd "get_references" \
+GET_REFS_MS=$(time_cmd_quiet \
   bash -c "printf '{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"tools/call\",\"params\":{\"name\":\"get_references\",\"arguments\":{\"symbol\":\"'"$QUERY_SYMBOL"'\"}}}\\n' | $CODEINDEX serve")
 
-GET_CALLERS_MS=$(time_cmd "get_callers" \
+GET_CALLERS_MS=$(time_cmd_quiet \
   bash -c "printf '{\"jsonrpc\":\"2.0\",\"id\":4,\"method\":\"tools/call\",\"params\":{\"name\":\"get_callers\",\"arguments\":{\"symbol\":\"'"$QUERY_SYMBOL"'\",\"depth\":3}}}\\n' | $CODEINDEX serve")
 
-GET_SUBGRAPH_MS=$(time_cmd "get_subgraph" \
+GET_SUBGRAPH_MS=$(time_cmd_quiet \
   bash -c "printf '{\"jsonrpc\":\"2.0\",\"id\":5,\"method\":\"tools/call\",\"params\":{\"name\":\"get_subgraph\",\"arguments\":{\"symbol\":\"'"$QUERY_SYMBOL"'\",\"depth\":2}}}\\n' | $CODEINDEX serve")
 
 # ── grep baseline ─────────────────────────────────────────────────────────────
@@ -127,7 +214,7 @@ GREP_LINE_COUNT=$(grep -r "$QUERY_SYMBOL" . \
   --exclude-dir=node_modules --exclude-dir=vendor --exclude-dir=.codeindex \
   2>/dev/null | wc -l | tr -d ' ')
 
-GREP_MS=$(time_cmd "grep" \
+GREP_MS=$(time_cmd_quiet \
   bash -c "grep -r '$QUERY_SYMBOL' . \
     --include='*.ts' --include='*.go' --include='*.py' --include='*.rs' \
     --exclude-dir=node_modules --exclude-dir=vendor --exclude-dir=.codeindex \

@@ -32,6 +32,7 @@ AI coding agents and a CLI tree explorer for developers.`,
 func init() {
 	rootCmd.AddCommand(versionCmd)
 	rootCmd.AddCommand(initCmd)
+	rootCmd.AddCommand(benchmarkCmd)
 	rootCmd.AddCommand(reindexCmd)
 	rootCmd.AddCommand(statusCmd)
 	rootCmd.AddCommand(serveCmd)
