@@ -17,6 +17,7 @@ var treeCmd = &cobra.Command{
 	Long: `Navigate the knowledge graph interactively.
 
 Examples:
+  codeindex tree                            # all indexed repo files
   codeindex tree handleRequest              # symbol-rooted tree
   codeindex tree --file src/api/handler.ts  # file structure tree
   codeindex tree handleRequest --json       # JSON output`,
@@ -43,11 +44,6 @@ func runTree(cmd *cobra.Command, args []string) error {
 	// Determine color mode: explicit flag or TTY detection.
 	useColor := colorFlag || isTerminal()
 
-	// Require either a symbol argument or --file flag.
-	if len(args) == 0 && fileFlag == "" {
-		return fmt.Errorf("provide a symbol name or use --file <path>")
-	}
-
 	// Load config.
 	cfg, _, err := config.LoadOrDetect(dir)
 	if err != nil {
@@ -70,7 +66,7 @@ func runTree(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("migrating schema: %w", err)
 	}
 
-	builder := tui.NewSymbolTreeBuilder(store, dir)
+	builder := tui.NewSymbolTreeBuilder(store, dir, cfg.Ignore...)
 
 	var root *tui.TreeNode
 	var title string
@@ -81,6 +77,12 @@ func runTree(cmd *cobra.Command, args []string) error {
 			return err
 		}
 		title = fmt.Sprintf("file: %s", fileFlag)
+	} else if len(args) == 0 {
+		root, err = builder.BuildRepoTree()
+		if err != nil {
+			return err
+		}
+		title = "tree: all indexed files"
 	} else {
 		symbolName := args[0]
 		root, err = builder.BuildSymbolTree(symbolName)

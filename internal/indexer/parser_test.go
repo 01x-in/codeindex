@@ -24,7 +24,7 @@ func TestParseMatches_FunctionDef(t *testing.T) {
 	assert.Equal(t, "handleRequest", result.Nodes[0].Name)
 	assert.Equal(t, "fn", result.Nodes[0].Kind)
 	assert.Equal(t, 13, result.Nodes[0].LineStart) // 0-indexed line 12 -> 1-indexed 13
-	assert.True(t, result.Nodes[0].Exported)        // "export" in Lines
+	assert.True(t, result.Nodes[0].Exported)       // "export" in Lines
 	assert.Contains(t, result.Nodes[0].Signature, "(id: string)")
 }
 
@@ -174,4 +174,60 @@ func TestParseMatches_NonExportedFunction(t *testing.T) {
 	assert.Len(t, result.Nodes, 1)
 	assert.Equal(t, "validateHeaders", result.Nodes[0].Name)
 	assert.False(t, result.Nodes[0].Exported, "private function should not be exported")
+}
+
+func TestParseMatches_FunctionDefWithGenericConstraintObjectType(t *testing.T) {
+	matches := []indexer.AstGrepMatch{
+		{
+			Text:   "export function omit<T extends { [key: string]: unknown }, K extends keyof T>(obj: T, key: K): Omit<T, K> {\n  return {} as Omit<T, K>\n}",
+			Range:  indexer.AstGrepRange{Start: indexer.Position{Line: 40, Column: 0}, End: indexer.Position{Line: 42, Column: 1}},
+			File:   "/repo/src/utils.ts",
+			Lines:  "export function omit<T extends { [key: string]: unknown }, K extends keyof T>(obj: T, key: K): Omit<T, K> {\n  return {} as Omit<T, K>\n}",
+			RuleID: "ts-function-def",
+		},
+	}
+
+	assert.NotPanics(t, func() {
+		result := indexer.ParseMatches(matches, "src/utils.ts", "typescript")
+
+		assert.Len(t, result.Nodes, 1)
+		assert.Equal(t, "omit", result.Nodes[0].Name)
+		assert.Equal(t, "(obj: T, key: K): Omit<T, K>", result.Nodes[0].Signature)
+	})
+}
+
+func TestParseMatches_FunctionDefWithDestructuredParamType(t *testing.T) {
+	matches := []indexer.AstGrepMatch{
+		{
+			Text:   "export default function Layout({ children }: { children: ReactNode }) {\n  return children\n}",
+			Range:  indexer.AstGrepRange{Start: indexer.Position{Line: 9, Column: 0}, End: indexer.Position{Line: 11, Column: 1}},
+			File:   "/repo/src/layout.tsx",
+			Lines:  "export default function Layout({ children }: { children: ReactNode }) {\n  return children\n}",
+			RuleID: "ts-function-def",
+		},
+	}
+
+	result := indexer.ParseMatches(matches, "src/layout.tsx", "typescript")
+
+	assert.Len(t, result.Nodes, 1)
+	assert.Equal(t, "Layout", result.Nodes[0].Name)
+	assert.Equal(t, "({ children }: { children: ReactNode })", result.Nodes[0].Signature)
+}
+
+func TestParseMatches_FunctionDefWithObjectTypePredicateReturn(t *testing.T) {
+	matches := []indexer.AstGrepMatch{
+		{
+			Text:   "function isErrorLike(err: unknown): err is { message: string } {\n  return typeof err === 'object'\n}",
+			Range:  indexer.AstGrepRange{Start: indexer.Position{Line: 17, Column: 0}, End: indexer.Position{Line: 19, Column: 1}},
+			File:   "/repo/src/utils.ts",
+			Lines:  "function isErrorLike(err: unknown): err is { message: string } {\n  return typeof err === 'object'\n}",
+			RuleID: "ts-function-def",
+		},
+	}
+
+	result := indexer.ParseMatches(matches, "src/utils.ts", "typescript")
+
+	assert.Len(t, result.Nodes, 1)
+	assert.Equal(t, "isErrorLike", result.Nodes[0].Name)
+	assert.Equal(t, "(err: unknown): err is { message: string }", result.Nodes[0].Signature)
 }

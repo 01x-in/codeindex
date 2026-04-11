@@ -47,6 +47,7 @@ npm install -g @ast-grep/cli   # via npm
 codeindex init        # auto-detect languages, write .codeindex.yaml, run initial index
 codeindex status      # check index health
 codeindex reindex     # re-index stale files
+codeindex benchmark   # interactive benchmark against a repo URL or local path
 
 # Query the index (JSON output — use directly from agents or scripts)
 codeindex query file-structure src/api/handler.ts
@@ -109,6 +110,7 @@ The MCP server exposes the same six operations as the `query` subcommands.
 
 ```
 codeindex init [--yes]                           Auto-detect languages, create config
+codeindex benchmark [repo] [symbol] [--keep]     Benchmark a repo URL or local path
 codeindex reindex [<file>] [--watch]             Re-index stale files or watch for changes
 codeindex status [--json]                        Index health summary
 codeindex query file-structure <path>            Structural skeleton of a file (JSON)
@@ -117,7 +119,8 @@ codeindex query references <symbol>              Find all usages of a symbol (JS
 codeindex query callers <symbol> [--depth N]     Upstream call graph (JSON)
 codeindex query subgraph <symbol> [--depth N]    Graph neighborhood (JSON)
 codeindex serve                                  Start MCP stdio server
-codeindex tree <symbol>                          Interactive TUI tree explorer
+codeindex tree [<symbol>] [--json]               Interactive TUI tree explorer (or JSON)
+codeindex tree --file <path>                     File structure tree
 codeindex version                                Print version
 ```
 
@@ -125,6 +128,15 @@ codeindex version                                Print version
 
 ```sh
 codeindex reindex --watch   # auto-reindex on file save (fsnotify, 100ms debounce)
+```
+
+### Benchmark mode
+
+```sh
+codeindex benchmark
+codeindex benchmark https://github.com/vercel/next.js createServer
+codeindex benchmark /path/to/local/repo handleRequest --out local-bench
+codeindex benchmark --keep https://github.com/microsoft/vscode registerCommand
 ```
 
 ---

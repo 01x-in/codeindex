@@ -80,6 +80,31 @@ func seedGraph(t *testing.T, store *graph.SQLiteStore) {
 		SourceID: handleReqID, TargetID: configTypeID,
 		Kind: "references", FilePath: "handler.ts", Line: 1,
 	}))
+
+	require.NoError(t, store.SetFileMetadata(graph.FileMetadata{
+		FilePath:    "handler.ts",
+		ContentHash: "handler-hash",
+		Language:    "typescript",
+		NodeCount:   2,
+		EdgeCount:   1,
+		IndexStatus: "ok",
+	}))
+	require.NoError(t, store.SetFileMetadata(graph.FileMetadata{
+		FilePath:    "routes.ts",
+		ContentHash: "routes-hash",
+		Language:    "typescript",
+		NodeCount:   1,
+		EdgeCount:   2,
+		IndexStatus: "ok",
+	}))
+	require.NoError(t, store.SetFileMetadata(graph.FileMetadata{
+		FilePath:    "validation.ts",
+		ContentHash: "validation-hash",
+		Language:    "typescript",
+		NodeCount:   1,
+		EdgeCount:   0,
+		IndexStatus: "ok",
+	}))
 }
 
 func TestBuildSymbolTree(t *testing.T) {
@@ -204,4 +229,162 @@ func TestBuildSymbolTreeWithImporters(t *testing.T) {
 	require.NotNil(t, importersGroup, "importers group should exist")
 	require.Len(t, importersGroup.Children, 1)
 	assert.Equal(t, "routeRequest", importersGroup.Children[0].Name)
+}
+
+func TestBuildRepoTree(t *testing.T) {
+	store, tmpDir := setupTestStore(t)
+	defer store.Close()
+	seedGraph(t, store)
+
+	builder := NewSymbolTreeBuilder(store, tmpDir)
+	root, err := builder.BuildRepoTree()
+	require.NoError(t, err)
+
+	assert.Equal(t, filepath.Base(tmpDir), root.Name)
+	assert.True(t, root.Expanded)
+	require.Len(t, root.Children, 3)
+	assert.Equal(t, "handler.ts", root.Children[0].Name)
+	assert.Equal(t, "routes.ts", root.Children[1].Name)
+	assert.Equal(t, "validation.ts", root.Children[2].Name)
+}
+
+func TestBuildSymbolTreePrefersRepoFilesAndFiltersPackageReferences(t *testing.T) {
+	store, tmpDir := setupTestStore(t)
+	defer store.Close()
+
+	repoRootID, err := store.UpsertNode(graph.Node{
+		Name: "Connect", Kind: "fn", FilePath: "internal/service.go",
+		LineStart: 10, LineEnd: 20, ColStart: 0, ColEnd: 10,
+		Exported: true, Language: "go",
+	})
+	require.NoError(t, err)
+
+	repoCallerID, err := store.UpsertNode(graph.Node{
+		Name: "Run", Kind: "fn", FilePath: "cmd/codeindex/main.go",
+		LineStart: 5, LineEnd: 12, ColStart: 0, ColEnd: 10,
+		Exported: true, Language: "go",
+	})
+	require.NoError(t, err)
+
+	packageRootID, err := store.UpsertNode(graph.Node{
+		Name: "Connect", Kind: "fn", FilePath: ".venv/lib/python3.11/site-packages/httpx/_client.py",
+		LineStart: 100, LineEnd: 120, ColStart: 0, ColEnd: 10,
+		Exported: true, Language: "python",
+	})
+	require.NoError(t, err)
+
+	packageCallerID, err := store.UpsertNode(graph.Node{
+		Name: "PoolConnect", Kind: "fn", FilePath: ".venv/lib/python3.11/site-packages/httpx/_pool.py",
+		LineStart: 40, LineEnd: 60, ColStart: 0, ColEnd: 10,
+		Exported: true, Language: "python",
+	})
+	require.NoError(t, err)
+
+	require.NoError(t, store.UpsertEdge(graph.Edge{
+		SourceID: repoCallerID, TargetID: repoRootID,
+		Kind: "calls", FilePath: "cmd/codeindex/main.go", Line: 7,
+	}))
+	require.NoError(t, store.UpsertEdge(graph.Edge{
+		SourceID: packageCallerID, TargetID: repoRootID,
+		Kind: "calls", FilePath: ".venv/lib/python3.11/site-packages/httpx/_pool.py", Line: 44,
+	}))
+	require.NoError(t, store.UpsertEdge(graph.Edge{
+		SourceID: packageCallerID, TargetID: packageRootID,
+		Kind: "calls", FilePath: ".venv/lib/python3.11/site-packages/httpx/_pool.py", Line: 48,
+	}))
+
+	require.NoError(t, store.SetFileMetadata(graph.FileMetadata{
+		FilePath:    "internal/service.go",
+		ContentHash: "repo-root",
+		Language:    "go",
+		NodeCount:   1,
+		EdgeCount:   1,
+		IndexStatus: "ok",
+	}))
+	require.NoError(t, store.SetFileMetadata(graph.FileMetadata{
+		FilePath:    "cmd/codeindex/main.go",
+		ContentHash: "repo-caller",
+		Language:    "go",
+		NodeCount:   1,
+		EdgeCount:   1,
+		IndexStatus: "ok",
+	}))
+	require.NoError(t, store.SetFileMetadata(graph.FileMetadata{
+		FilePath:    ".venv/lib/python3.11/site-packages/httpx/_client.py",
+		ContentHash: "pkg-root",
+		Language:    "python",
+		NodeCount:   1,
+		EdgeCount:   0,
+		IndexStatus: "ok",
+	}))
+	require.NoError(t, store.SetFileMetadata(graph.FileMetadata{
+		FilePath:    ".venv/lib/python3.11/site-packages/httpx/_pool.py",
+		ContentHash: "pkg-caller",
+		Language:    "python",
+		NodeCount:   1,
+		EdgeCount:   2,
+		IndexStatus: "ok",
+	}))
+
+	builder := NewSymbolTreeBuilder(store, tmpDir)
+	root, err := builder.BuildSymbolTree("Connect")
+	require.NoError(t, err)
+
+	assert.Equal(t, "internal/service.go", root.FilePath)
+
+	var callersGroup *TreeNode
+	for _, child := range root.Children {
+		if child.label == "callers" {
+			callersGroup = child
+			break
+		}
+	}
+	require.NotNil(t, callersGroup, "callers group should exist")
+	require.Len(t, callersGroup.Children, 1)
+	assert.Equal(t, "Run", callersGroup.Children[0].Name)
+	assert.Equal(t, "cmd/codeindex/main.go", callersGroup.Children[0].FilePath)
+}
+
+func TestBuildRepoTreeFiltersPackageFiles(t *testing.T) {
+	store, tmpDir := setupTestStore(t)
+	defer store.Close()
+
+	repoNodeID, err := store.UpsertNode(graph.Node{
+		Name: "Run", Kind: "fn", FilePath: "cmd/codeindex/main.go",
+		LineStart: 5, LineEnd: 12, ColStart: 0, ColEnd: 10,
+		Exported: true, Language: "go",
+	})
+	require.NoError(t, err)
+	packageNodeID, err := store.UpsertNode(graph.Node{
+		Name: "Connect", Kind: "fn", FilePath: ".venv/lib/python3.11/site-packages/httpx/_client.py",
+		LineStart: 100, LineEnd: 120, ColStart: 0, ColEnd: 10,
+		Exported: true, Language: "python",
+	})
+	require.NoError(t, err)
+	assert.NotZero(t, repoNodeID)
+	assert.NotZero(t, packageNodeID)
+
+	require.NoError(t, store.SetFileMetadata(graph.FileMetadata{
+		FilePath:    "cmd/codeindex/main.go",
+		ContentHash: "repo",
+		Language:    "go",
+		NodeCount:   1,
+		EdgeCount:   0,
+		IndexStatus: "ok",
+	}))
+	require.NoError(t, store.SetFileMetadata(graph.FileMetadata{
+		FilePath:    ".venv/lib/python3.11/site-packages/httpx/_client.py",
+		ContentHash: "package",
+		Language:    "python",
+		NodeCount:   1,
+		EdgeCount:   0,
+		IndexStatus: "ok",
+	}))
+
+	builder := NewSymbolTreeBuilder(store, tmpDir)
+	root, err := builder.BuildRepoTree()
+	require.NoError(t, err)
+
+	require.Len(t, root.Children, 1)
+	assert.Equal(t, "cmd/codeindex/main.go", root.Children[0].Name)
 }
