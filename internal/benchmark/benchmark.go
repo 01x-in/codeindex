@@ -433,10 +433,21 @@ func copyLocalRepo(src string, dst string) error {
 			if err != nil {
 				return err
 			}
+			resolvedTarget, err := resolveSymlinkTarget(src, path, link)
+			if err != nil {
+				return err
+			}
+			if resolvedTarget == "" {
+				return nil
+			}
+			copiedLink, err := rewriteSymlinkTarget(src, dst, target, resolvedTarget)
+			if err != nil {
+				return err
+			}
 			if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
 				return err
 			}
-			return os.Symlink(link, target)
+			return os.Symlink(copiedLink, target)
 		}
 
 		info, err := d.Info()
@@ -449,6 +460,53 @@ func copyLocalRepo(src string, dst string) error {
 
 		return copyFile(path, target, info.Mode().Perm())
 	})
+}
+
+func resolveSymlinkTarget(srcRoot string, sourcePath string, link string) (string, error) {
+	var resolved string
+	if filepath.IsAbs(link) {
+		resolved = filepath.Clean(link)
+	} else {
+		resolved = filepath.Clean(filepath.Join(filepath.Dir(sourcePath), link))
+	}
+
+	withinRoot, err := pathWithinRoot(srcRoot, resolved)
+	if err != nil {
+		return "", err
+	}
+	if !withinRoot {
+		return "", nil
+	}
+
+	return resolved, nil
+}
+
+func rewriteSymlinkTarget(srcRoot string, dstRoot string, dstPath string, resolvedSourceTarget string) (string, error) {
+	relToSourceRoot, err := filepath.Rel(srcRoot, resolvedSourceTarget)
+	if err != nil {
+		return "", fmt.Errorf("relativizing symlink target: %w", err)
+	}
+
+	dstTarget := filepath.Join(dstRoot, relToSourceRoot)
+	rewritten, err := filepath.Rel(filepath.Dir(dstPath), dstTarget)
+	if err != nil {
+		return "", fmt.Errorf("rewriting symlink target: %w", err)
+	}
+	return rewritten, nil
+}
+
+func pathWithinRoot(root string, candidate string) (bool, error) {
+	rel, err := filepath.Rel(root, candidate)
+	if err != nil {
+		return false, fmt.Errorf("checking path containment: %w", err)
+	}
+	if rel == ".." {
+		return false, nil
+	}
+	if strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return false, nil
+	}
+	return true, nil
 }
 
 func copyFile(src string, dst string, mode fs.FileMode) error {
@@ -641,7 +699,11 @@ func sanitizeRepoName(name string) string {
 		}
 	}
 
-	return strings.Trim(b.String(), "-")
+	trimmed := strings.Trim(b.String(), "-")
+	if trimmed == "" {
+		return "repo"
+	}
+	return trimmed
 }
 
 func formatDuration(d time.Duration) string {
