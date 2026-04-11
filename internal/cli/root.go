@@ -37,6 +37,7 @@ func init() {
 	rootCmd.AddCommand(statusCmd)
 	rootCmd.AddCommand(serveCmd)
 	rootCmd.AddCommand(treeCmd)
+	rootCmd.AddCommand(queryCmd)
 }
 
 // Execute runs the root command.

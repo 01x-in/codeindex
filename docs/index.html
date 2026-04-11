@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>codeindex — Structural code intelligence for AI agents</title>
   <meta name="description"
-    content="A persistent knowledge graph for codebases. Query symbols, references, and call chains via MCP — instead of reading raw files.">
+    content="A persistent knowledge graph for codebases. Query symbols, references, and call chains directly from your shell — instead of reading raw files.">
   <meta property="og:title" content="codeindex">
   <meta property="og:description"
     content="A persistent structural knowledge graph for codebases. Cut agent context usage 10-20x.">
@@ -1080,7 +1080,7 @@
     </a>
     <ul class="nav-links">
       <li><a href="#how">How it works</a></li>
-      <li><a href="#tools">MCP Tools</a></li>
+      <li><a href="#tools">Tools</a></li>
       <li><a href="#install">Install</a></li>
       <li>
         <a href="https://github.com/01x-in/codeindex" class="nav-gh">
@@ -1113,7 +1113,7 @@
 
     <p class="hero-desc">
       codeindex builds a persistent structural graph of your codebase —<br>
-      symbols, references, call chains — queryable via MCP tools.<br>
+      symbols, references, call chains — queryable via CLI.<br>
       No more reading entire files to find one function signature.
     </p>
 
@@ -1228,9 +1228,9 @@
             graph. Every question restarts from scratch.</div>
         </div>
         <div class="problem-card">
-          <div class="problem-num">500+</div>
-          <div class="problem-title">context lines wasted on structure</div>
-          <div class="problem-body">Reading entire files to find one function signature. Most of that context is never
+          <div class="problem-num">12×</div>
+          <div class="problem-title">more tokens consumed than needed</div>
+          <div class="problem-body">grep returns 110 lines (~3,300 tokens) for a single symbol lookup. codeindex returns structured facts in ~265 tokens.
             needed — the agent is just lost.</div>
         </div>
         <div class="problem-card">
@@ -1313,9 +1313,8 @@
           <div class="how-step">
             <div class="step-num">4</div>
             <div>
-              <div class="step-title">Query via MCP or CLI</div>
-              <div class="step-body">Any agent that supports MCP connects over stdio. <span
-                  class="inline-code">codeindex serve</span> — that's it. Or explore interactively with <span
+              <div class="step-title">Query from any shell</div>
+              <div class="step-body">Call <span class="inline-code">codeindex query</span> directly — JSON to stdout, no server needed. Explore interactively with <span
                   class="inline-code">codeindex tree</span>.</div>
             </div>
           </div>
@@ -1327,34 +1326,34 @@
   <!-- TOOLS -->
   <div class="section-outer">
     <section id="tools" class="reveal">
-      <div class="section-tag">MCP Tools</div>
-      <h2 class="section-title">Six tools.<br>Replace fifty grep calls.</h2>
+      <div class="section-tag">Tools</div>
+      <h2 class="section-title">Six queries.<br>Replace fifty grep calls.</h2>
       <div class="tools-grid">
         <div class="tool-card">
-          <div class="tool-name">get_file_structure</div>
+          <div class="tool-name">file-structure</div>
           <div class="tool-desc">Structural skeleton of a file — exports, functions, classes, types — without reading
             the source.</div>
           <div class="tool-strike">reading entire files</div>
         </div>
         <div class="tool-card">
-          <div class="tool-name">find_symbol</div>
+          <div class="tool-name">find-symbol</div>
           <div class="tool-desc">Locate where any function, type, class, or variable is defined across the entire
             codebase.</div>
           <div class="tool-strike">grep -r "function X"</div>
         </div>
         <div class="tool-card">
-          <div class="tool-name">get_references</div>
+          <div class="tool-name">references</div>
           <div class="tool-desc">Every file and line that uses a given symbol — with relationship kind: calls, imports,
             references.</div>
           <div class="tool-strike">multi-file symbol search</div>
         </div>
         <div class="tool-card">
-          <div class="tool-name">get_callers</div>
+          <div class="tool-name">callers</div>
           <div class="tool-desc">Trace the call graph upstream from any function. Configurable depth, cycle-safe.</div>
           <div class="tool-strike">manual call tracing</div>
         </div>
         <div class="tool-card">
-          <div class="tool-name">get_subgraph</div>
+          <div class="tool-name">subgraph</div>
           <div class="tool-desc">Bounded neighborhood around any symbol — N hops of nodes and edges. Structural context
             without reading files.</div>
           <div class="tool-strike">reading 5–10 files</div>
@@ -1380,7 +1379,7 @@
             <span class="td td-r"></span>
             <span class="td td-y"></span>
             <span class="td td-g"></span>
-            <span class="terminal-title">codeindex serve</span>
+            <span class="terminal-title">codeindex query find-symbol createServer</span>
           </div>
           <div class="terminal-body" id="terminal-body"></div>
         </div>
@@ -1396,9 +1395,8 @@
           <div class="demo-feat">
             <div class="demo-feat-icon">🔗</div>
             <div>
-              <div class="demo-feat-title">MCP stdio — agent agnostic</div>
-              <div class="demo-feat-body">Works with Claude Code, Cursor, Codex, Gemini, OpenCode, Copilot, Cline, and
-                any MCP-compatible agent.</div>
+              <div class="demo-feat-title">Agent agnostic</div>
+              <div class="demo-feat-body">Call <span class="inline-code">codeindex query</span> directly via Bash. Works with Claude Code, Cursor, Codex, Gemini, Copilot, Cline, and any agent with a shell tool.</div>
             </div>
           </div>
           <div class="demo-feat">
@@ -1482,10 +1480,11 @@
         <div class="qs-label">Quick start</div>
         <span class="qs-line"><span class="qs-comment"># 1. index your repo</span></span>
         <span class="qs-line" style="color:var(--accent)">codeindex init</span>
-        <span class="qs-line"><span class="qs-comment"># 2. start the MCP server</span></span>
-        <span class="qs-line" style="color:var(--accent)">codeindex serve</span>
-        <span class="qs-line"><span class="qs-comment"># 3. add to your agent's MCP config</span></span>
-        <span class="qs-line" style="color:var(--text-dim)">"command": "codeindex", "args": ["serve"]</span>
+        <span class="qs-line"><span class="qs-comment"># 2. query directly (JSON output)</span></span>
+        <span class="qs-line" style="color:var(--accent)">codeindex query find-symbol handleRequest</span>
+        <span class="qs-line" style="color:var(--accent)">codeindex query references handleRequest</span>
+        <span class="qs-line"><span class="qs-comment"># 3. benchmark against any repo to measure token reduction</span></span>
+        <span class="qs-line" style="color:var(--accent)">codeindex benchmark https://github.com/vercel/next.js createServer</span>
       </div>
     </section>
   </div>
