@@ -117,6 +117,25 @@ func TestInitNoLanguagesDetected(t *testing.T) {
 	assert.Empty(t, cfg.Languages)
 }
 
+func TestInitPrintsAgentIntegrationHint(t *testing.T) {
+	dir := t.TempDir()
+
+	os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test"), 0644)
+
+	var stdout, stderr bytes.Buffer
+	stdin := mockStdin(t, "")
+
+	err := cli.RunInit(dir, true, stdin, &stdout, &stderr)
+	require.NoError(t, err)
+
+	output := stdout.String()
+	assert.Contains(t, output, "Agent integration:")
+	assert.Contains(t, output, "codeindex query <subcommand>")
+	assert.Contains(t, output, "npx skills add codeindex/skills")
+	assert.NotContains(t, output, "MCP config")
+	assert.NotContains(t, output, "claude mcp add")
+}
+
 func TestInitCreatesGitignore(t *testing.T) {
 	dir := t.TempDir()
 

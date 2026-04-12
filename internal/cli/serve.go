@@ -16,11 +16,11 @@ import (
 
 var serveCmd = &cobra.Command{
 	Use:   "serve",
-	Short: "Start MCP stdio JSON-RPC server",
-	Long: `Start the MCP stdio server for agent integration.
+	Short: "Start the stdio JSON-RPC server",
+	Long: `Start the stdio server for agent integrations that need tool calls.
 
-Connect your AI coding agent by adding to its MCP config:
-  {"command": "codeindex", "args": ["serve"]}
+Most agents can call codeindex query directly via Bash.
+Use this server only if your agent requires stdio tool access.
 
 Examples:
   codeindex serve`,

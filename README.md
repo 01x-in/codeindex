@@ -87,22 +87,9 @@ The `codeindex query` subcommands output JSON to stdout — coding agents can ca
 
 All responses include a `stale` flag and `metadata.stale_files` so the agent knows when to reindex.
 
-### MCP server (optional)
+### Optional stdio server
 
-For environments that prefer MCP tool calls, run `codeindex serve` and add to your agent's MCP config:
-
-```json
-{
-  "mcpServers": {
-    "codeindex": {
-      "command": "codeindex",
-      "args": ["serve"]
-    }
-  }
-}
-```
-
-The MCP server exposes the same six operations as the `query` subcommands.
+If your agent cannot call shell commands directly, you can still run `codeindex serve` as a subprocess. Most agents should use the `codeindex query` subcommands directly via Bash.
 
 ---
 
@@ -118,7 +105,7 @@ codeindex query find-symbol <name> [--kind]      Find symbol definitions (JSON)
 codeindex query references <symbol>              Find all usages of a symbol (JSON)
 codeindex query callers <symbol> [--depth N]     Upstream call graph (JSON)
 codeindex query subgraph <symbol> [--depth N]    Graph neighborhood (JSON)
-codeindex serve                                  Start MCP stdio server
+codeindex serve                                  Start stdio server
 codeindex tree [<symbol>] [--json]               Interactive TUI tree explorer (or JSON)
 codeindex tree --file <path>                     File structure tree
 codeindex version                                Print version
